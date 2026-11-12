@@ -1,0 +1,126 @@
+# dsh-plugin-code-studio — SuperAgent 执行器接线（可选）
+#
+# 目的：让 dsh-superagent 的 Executor Session（WORKER_PRESET = 'dsh-superagent-worker'）
+# 跑在「代码总编工作室」的工作纪律下，而不是一个无角色的通用执行器。
+#
+# 为什么用 override 而不是新 preset：SuperAgent 在 src/app/sessions.ts:48 把
+#   WORKER_PRESET = 'dsh-superagent-worker'
+# 写死成常量，建 Session 时 `agentPreset: WORKER_PRESET`。要让执行器换预设，
+# 唯一不 fork 源码的办法是把这一行 preset 的 config 整份换掉——preset 的 id 必须
+# 仍是 'dsh-superagent-worker'，否则会话找不到它。
+#
+# 用法：把下面这一整行 merge 进你的 profile 的 cordis.patch.yml（与已有的
+# `- id: dsh-superagent-worker-preset` 同 id，后写的配置整体替换前面的；config 是
+# 整体替换不做深 merge，所以这里必须把 worker 需要的东西重述完整）。
+# 只改动了 persona 前缀 + 追加 code-studio 纪律段，其余工具集与 5 秒前台 shell 保持
+# 与 SuperAgent 自带的一致。
+#
+# 注意：code_* 工具由 dsh-plugin-code-studio 主插件在 profile 根注册，所有会话可见；
+# 这里不再重复挂工具，只让执行器知道「你是谁、按什么纪律写代码」。
+
+- id: dsh-superagent-worker-preset
+  name: '@deepseek-ai/dsh-agent-preset'
+  config:
+    id: dsh-superagent-worker
+    name: dsh-superagent 执行器（代码总编工作室纪律）
+    description: dsh-superagent 的执行器 Session 专用，不供手动选择。前台命令超 5 秒转入后台；按代码总编工作室的实现纪律写代码。
+    order: 90
+    plugins:
+      - id: persona
+        name: '@deepseek-ai/dsh-persona'
+        config:
+          prefix: |
+            You are a coding agent powered by the {{model}} model, working as an IMPLEMENTER in the 代码总编工作室.
+            写代码前先爬 ponytail 梯子，停在第一个成立的台阶：需要存在吗（YAGNI）→ 仓库里现成的复用吗 →
+            标准库能做吗 → 平台原生覆盖吗 → 已装依赖能解决吗 → 能一行吗 → 才写最小实现。
+            最短可工作 diff 胜出，但前提是真读懂问题：动手前先把要改的文件与全部调用方读一遍，
+            修 bug 找根因（改共享守卫，不在每个调用方打补丁）。不做没要求的抽象，不留「以后再说」的脚手架。
+            非平凡逻辑留一个能跑的最小自检（assert 自检或一个 test_*）。你只写任务单 write_scope 指定的路径，
+            越界会被当场拒绝；需要读别处就读，但不要改。
+      - id: agent-instructions
+        name: '@deepseek-ai/dsh-agent-instructions'
+        config:
+          maxBytes: 65536
+      - id: time-context
+        name: '@deepseek-ai/dsh-time-context'
+      - id: shell
+        name: cordis:group
+        group: true
+        isolate:
+          shell: true
+        config:
+          - id: bash-sandbox
+            name: '@deepseek-ai/dsh-bash-sandbox'
+            disabled: !!js process.platform === 'win32'
+            config:
+              timeoutMs: 5000
+              maxTimeoutMs: 5000
+          - id: pwsh-sandbox
+            name: '@deepseek-ai/dsh-pwsh-sandbox'
+            disabled: !!js process.platform !== 'win32'
+            config:
+              timeoutMs: 5000
+              maxTimeoutMs: 5000
+          - id: tool-bash
+            name: '@deepseek-ai/dsh-tool-bash'
+            disabled: !!js process.platform === 'win32'
+          - id: tool-pwsh
+            name: '@deepseek-ai/dsh-tool-pwsh'
+            disabled: !!js process.platform !== 'win32'
+      - id: tool-fs
+        name: '@deepseek-ai/dsh-tool-fs'
+      - id: tool-fs-search
+        name: '@deepseek-ai/dsh-tool-fs-search'
+        config:
+          sampleOverCapGlobResults: false
+      - id: tool-jobs
+        name: '@deepseek-ai/dsh-tool-jobs'
+        config:
+          waitTimeoutMs: 5000
+          maxWaitTimeoutMs: 5000
+      - id: skill-filesystem
+        name: '@deepseek-ai/dsh-skill-filesystem'
+      - id: tool-skill
+        name: '@deepseek-ai/dsh-tool-skill'
+      - id: compaction
+        name: cordis:group
+        group: true
+        isolate:
+          compaction: true
+          toolResultPruner: true
+        config:
+          - id: compaction-basic
+            name: '@deepseek-ai/dsh-compaction-basic'
+          - id: command-compact
+            name: '@deepseek-ai/dsh-command-compact'
+          - id: tool-result-pruner
+            name: '@deepseek-ai/dsh-compaction-tool-result-pruner'
+            config:
+              thresholdChars: 8192
+              headChars: 4096
+              tailChars: 1024
+      - id: delegation
+        name: cordis:group
+        group: true
+        isolate:
+          workflowEngine: true
+        config:
+          - id: tool-subagent-control
+            name: '@deepseek-ai/dsh-tool-subagent-control'
+          - id: tool-subagent
+            name: '@deepseek-ai/dsh-tool-subagent'
+            config:
+              provider: spawn
+              toolName: subagent
+              modelSelection: true
+              modelDiscovery: true
+              agentPreset: standard
+      - id: tool-todo
+        name: '@deepseek-ai/dsh-tool-todo'
+        config:
+          allowParallelInProgress: true
+      - id: tool-web
+        name: '@deepseek-ai/dsh-tool-web'
+        config:
+          fetch: false
+          searchTimeoutMs: 60000

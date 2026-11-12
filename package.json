@@ -1,0 +1,79 @@
+{
+  "name": "dsh-plugin-code-studio",
+  "version": "0.1.0",
+  "private": true,
+  "description": "代码总编工作室：技术总监不写代码，只输出工作流并派单给 13 个角色子 Agent；每张单进 code_task 账、有 write_scope 文件 glob、过机器门 code_check 与独立审校两道门。",
+  "meta": {
+    "title": "代码总编工作室",
+    "description": "把代码生产的质量控制从主观判断变成可计算流程：角色分工、任务账本、写入范围硬限制、机器门 + 独立审校。"
+  },
+  "type": "module",
+  "main": "lib/index.js",
+  "exports": {
+    ".": {
+      "default": "./lib/index.js"
+    },
+    "./agent-models": {
+      "default": "./lib/agent-models.js"
+    },
+    "./code-guard": {
+      "default": "./lib/code-guard.js"
+    },
+    "./client": "./lib/client.js",
+    "./lib/task-registry": "./lib/task-registry.js",
+    "./lib/orchestrator": "./lib/orchestrator.js",
+    "./lib/session-roles": "./lib/session-roles.js",
+    "./lib/dispatch": "./lib/dispatch.js",
+    "./lib/packet": "./lib/packet.js",
+    "./lib/runner": "./lib/runner.js",
+    "./lib/kb": "./lib/kb.js",
+    "./lib/map": "./lib/map.js",
+    "./lib/review": "./lib/review.js",
+    "./lib/eval": "./lib/eval.js",
+    "./lib/embedder": "./lib/embedder.js",
+    "./lib/studio-store": "./lib/studio-store.js",
+    "./lib/studio-memory": "./lib/studio-memory.js",
+    "./lib/studio-dispatch": "./lib/studio-dispatch.js",
+    "./lib/studio-watch": "./lib/studio-watch.js",
+    "./lib/studio-github": "./lib/studio-github.js",
+    "./cordis.patch.yml": "./cordis.patch.yml",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "lib",
+    "presets",
+    "cordis.patch.yml",
+    "README.md"
+  ],
+  "license": "MIT",
+  "keywords": [
+    "dsh",
+    "dsh-plugin",
+    "code",
+    "studio",
+    "orchestration",
+    "multi-agent"
+  ],
+  "peerDependencies": {
+    "@deepseek-ai/cordis": ">=4.0.4 <5.0.0",
+    "@deepseek-ai/dsh": ">=0.2.0-rc.1",
+    "@deepseek-ai/schemastery": ">=3.18.4 <4.0.0"
+  },
+  "dsh": {
+    "engines": {
+      "dsh": ">=0.2.0-rc.1"
+    },
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    },
+    "client": {
+      "platform": "web",
+      "inject": [
+        "@deepseek-ai/dsh-api-remotes",
+        "@deepseek-ai/dsh-api-session-controller",
+        "@deepseek-ai/dsh-client-locale",
+        "@deepseek-ai/dsh-client-ui-settings"
+      ]
+    }
+  }
+}

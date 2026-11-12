@@ -1,0 +1,19 @@
+# 依赖
+node_modules/
+.pnpm-store/
+
+# 运行时数据（工作区里的工作室台账，不该进版本库）
+.codewrite/
+**/.codewrite/
+*.log
+unlag-reload.log
+
+# 编辑器 / 系统
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# 临时文件
+*.tmp
+*.bak

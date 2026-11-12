@@ -1,0 +1,7 @@
+# dsh bundle patch: inserts this plugin into a profile's layer stack.
+# 只加编排层与 code-* 工具，不改 profile 的既有条目。
+- insert:
+    - id: code-studio
+      name: 'dsh-plugin-code-studio'
+    - id: code-studio-agent-models
+      name: 'dsh-plugin-code-studio/agent-models'
