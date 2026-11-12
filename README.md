@@ -55,7 +55,8 @@
 除了本地收件目录，也能直接绑一个 GitHub 仓库，把它的 open issues 当来源；配置落 `<repo>/.codewrite/github.json`：
 
 - 会话里 `/code-studio-watch github owner/repo`（也接受完整 GitHub URL）→ 开；`github off` → 关。
-- 私有仓库或想提额度：`/code-studio-watch token <token>`（只存本机，不进版本库）。
+- 私有仓库或想提额度：**手动存 PAT**。会话里 `/code-studio-watch token <pat>`，或在「工作室」Tab 顶部的 **PAT** 一栏粘贴（password 输入框）点保存；`/code-studio-watch token off`（或 Tab 里点清除）删掉。
+- PAT 单独存 `<repo>/.codewrite/github-token`（纯文本，仅本机），**不进 `github.json`、不进版本库**；`github.json` 里只记 `enabled/repo/labels/assignee/intervalMs`，Tab 只显示「已存/未存」，永远读不到明文。
 - 也可在「工作室」Tab 顶部的 **GitHub 源** 一栏填 `owner/repo` 点绑定。
 - 拉取规则：只要 `state=open`、排除 PR；issue 正文里写 `folders: src/a, src/b` 或出现像路径的 token，会自动抽成 region 的文件夹。
 - 轮询带 ETag（304 不重拉），默认 120s；`/code-studio-watch scan` 立即拉一次。
