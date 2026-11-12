@@ -36,6 +36,7 @@
     "./lib/studio-dispatch": "./lib/studio-dispatch.js",
     "./lib/studio-watch": "./lib/studio-watch.js",
     "./lib/studio-github": "./lib/studio-github.js",
+    "./lib/studio-pr": "./lib/studio-pr.js",
     "./cordis.patch.yml": "./cordis.patch.yml",
     "./package.json": "./package.json"
   },
@@ -72,7 +73,11 @@
         "@deepseek-ai/dsh-api-remotes",
         "@deepseek-ai/dsh-api-session-controller",
         "@deepseek-ai/dsh-client-locale",
-        "@deepseek-ai/dsh-client-ui-settings"
+        "@deepseek-ai/dsh-client-ui-settings",
+        "@deepseek-ai/dsh-client-ui-layout",
+        "@deepseek-ai/dsh-client-ui-session",
+        "@deepseek-ai/dsh-client-ui-sidebar",
+        "@deepseek-ai/dsh-client-ui-sidebar-right"
       ]
     }
   }

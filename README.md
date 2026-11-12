@@ -33,7 +33,7 @@
 | `code_review` | 静态审校扫描：待办标记 / console.log / debugger / any / 空 catch / 超长函数 / 硬编码密钥 |
 | `code_map` | 依赖图：扫各包清单建内部依赖有向图、列外部依赖、找循环依赖 |
 | `code_kb` | 代码范例库：按语义（bge-m3 向量，退词法）沉淀/检索「写对了的代码」范例 |
-| `code_studio` | 工作区工作室台账：issue 归属 region、派给持久子会话、开关监听收件目录（`assign`/`issues`/`regions`/`set`/`dispatch`/`watch`） |
+| `code_studio` | 工作区工作室台账：issue 归属 region、派给持久子会话、开关监听收件目录、建 PR（`assign`/`issues`/`regions`/`set`/`dispatch`/`watch`/`pr`） |
 
 ## 工作室：监听 → 派单 → 报告（多仓库）
 
@@ -44,11 +44,26 @@
    —— 轮询器下一轮（默认 60s）把它变成 issue 并派单。
 3. **持久子会话按 region 复用**：同一片文件夹的后续 issue 追回同一个子会话串行追加，换片才新建；
    在飞的 region 分组 ≤ 2，子会话不得再派 `tech-lead`。
-4. 子会话结算时，报告回写 `issues.json`；会话里的「工作室」Tab 三栏（issue 列表 / 报告 / 工作树）直接渲染。
+4. 子会话结算时，报告回写 `issues.json`；**右侧栏「工作室」页**同屏四区（issue 列表 / 工作树树状图 / 报告 / 工作区）直接渲染。
+
+**打开方式**：点会话右侧栏底部的 🧰 启动器，打开「工作室」右侧栏页（`sidebar.footer.action` → `sidebarRight.openTab('code-studio')`）。
+工作树按选中 issue 的 region 文件夹逐层懒加载渲染成树；点「建 PR」对 `DONE` 的 issue 走 gh 建 PR（见下）。
 
 监听配置：`/code-studio-watch on|off|scan|interval <ms>`，或 `code_studio` 的 `watch` action。
 仓库根出现 `.codewrite/`：`issues.json`、`regions.json`、`watch.json`、`inbox/`、`editor/`（工作区记忆）
 —— 均为运行产物，建议进 `.gitignore`。
+
+### 建 PR（走本机 gh CLI，插件不留 key）
+
+对某个 `DONE` 的 issue，`/code-studio-watch pr <issueId>`（或 `code_studio` 的 `pr` action / 工作室页「建 PR」按钮）会：
+
+1. 校验目标目录是 git 仓库；
+2. `gh auth status` 校验已登录（未登录会提示 `gh auth login`）；
+3. 切到 `issue/<id>` 分支 → 有改动则 `add + commit` → `git push -u origin issue/<id>`；
+4. `gh pr create --base main --head issue/<id> --title … --body …`，返回 PR 链接。
+
+**前提**：装 `gh`（`winget install --id GitHub.cli -e`）并 `gh auth login -h github.com` 一次。
+凭据存在 gh 自己的 `hosts.yml`，插件**不保存任何 GitHub 凭据**。只建 PR、**不自动合并、不自动推 main**；冲突留给人处理。
 
 ### GitHub 源（从 GitHub Issues 拉单）
 
@@ -75,7 +90,7 @@
 ```
 lib/          index.js(注册) code-guard.js dispatch.js orchestrator.js task-registry.js
               session-roles.js packet.js runner.js agent-models.js
-              studio-store.js studio-memory.js studio-dispatch.js studio-watch.js studio-github.js
+              studio-store.js studio-memory.js studio-dispatch.js studio-watch.js studio-github.js studio-pr.js
 presets/code-editor/
               preset.yml agent.cordis.yml orchestration.md roles/*.md(13)
 ```
