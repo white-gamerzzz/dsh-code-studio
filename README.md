@@ -50,6 +50,17 @@
 仓库根出现 `.codewrite/`：`issues.json`、`regions.json`、`watch.json`、`inbox/`、`editor/`（工作区记忆）
 —— 均为运行产物，建议进 `.gitignore`。
 
+### GitHub 源（从 GitHub Issues 拉单）
+
+除了本地收件目录，也能直接绑一个 GitHub 仓库，把它的 open issues 当来源；配置落 `<repo>/.codewrite/github.json`：
+
+- 会话里 `/code-studio-watch github owner/repo`（也接受完整 GitHub URL）→ 开；`github off` → 关。
+- 私有仓库或想提额度：`/code-studio-watch token <token>`（只存本机，不进版本库）。
+- 也可在「工作室」Tab 顶部的 **GitHub 源** 一栏填 `owner/repo` 点绑定。
+- 拉取规则：只要 `state=open`、排除 PR；issue 正文里写 `folders: src/a, src/b` 或出现像路径的 token，会自动抽成 region 的文件夹。
+- 轮询带 ETag（304 不重拉），默认 120s；`/code-studio-watch scan` 立即拉一次。
+- 已派过的 issue 编号记在 `issues.json`，重复拉取不会重派。
+
 ## 硬限制（code-guard）
 
 挂在 `presets/code-editor/agent.cordis.yml` 的预设子插件，只对使用本预设的总监会话生效：
@@ -63,10 +74,12 @@
 ```
 lib/          index.js(注册) code-guard.js dispatch.js orchestrator.js task-registry.js
               session-roles.js packet.js runner.js agent-models.js
-              studio-store.js studio-memory.js studio-dispatch.js studio-watch.js
+              studio-store.js studio-memory.js studio-dispatch.js studio-watch.js studio-github.js
 presets/code-editor/
               preset.yml agent.cordis.yml orchestration.md roles/*.md(13)
 ```
+
+每个 `studio-*.js` 都是可独立自测的纯逻辑模块（`node lib/studio-store.js` 等自带 demo）。
 
 ## 复用说明（ponytail）
 
@@ -76,5 +89,9 @@ presets/code-editor/
 ## 仓库侧状态
 
 跑起来后仓库根会出现 `.codewrite/`：`agents/`（任务账 registry.json + 事件 .jsonl + orphaned/）、
-`editor/`（总监记忆）、`ledger/`（档案交接）、`issues.json`/`regions.json`/`watch.json`/`inbox/`（工作室台账与监听）。
-这是运行产物，建议进 `.gitignore`。
+`editor/`（总监记忆）、`ledger/`（档案交接）、`issues.json`/`regions.json`/`watch.json`/`github.json`/`inbox/`（工作室台账与监听来源）。
+这是运行产物，建议进 `.gitignore`（本仓库已默认忽略）。
+
+## 许可
+
+MIT。见 [LICENSE](./LICENSE)。
