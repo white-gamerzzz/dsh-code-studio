@@ -1,7 +1,7 @@
 # dsh-plugin-code-studio · 代码总编工作室
 
 参考 `dsh-plugin-novel`（小说总编工作室）与 SuperAgent 编排插件做的**代码生产**版本。
-技术总监不写代码，只输出工作流 + 派单给 13 个角色子 Agent；每张单走 `code_task` 账本、
+技术总监不写代码，只输出工作流 + 派单给 6 类角色子 Agent；每张单走 `code_task` 账本、
 有 `write_scope` 文件硬边界、过「机器门 `code_check` + 独立审校」两道门。
 
 ## 安装
@@ -114,7 +114,7 @@ lib/          index.js(注册) code-guard.js dispatch.js orchestrator.js task-re
               studio-store.js studio-memory.js studio-dispatch.js studio-watch.js
               studio-github.js studio-pr.js studio-intake.js
 presets/code-editor/
-              preset.yml agent.cordis.yml orchestration.md roles/*.md(13)
+              preset.yml agent.cordis.yml orchestration.md roles/*.md(7)
 ```
 
 每个 `studio-*.js` 都是可独立自测的纯逻辑模块（`node lib/studio-store.js` 等自带 demo）。
