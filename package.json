@@ -37,6 +37,7 @@
     "./lib/studio-watch": "./lib/studio-watch.js",
     "./lib/studio-github": "./lib/studio-github.js",
     "./lib/studio-pr": "./lib/studio-pr.js",
+    "./lib/studio-intake": "./lib/studio-intake.js",
     "./cordis.patch.yml": "./cordis.patch.yml",
     "./package.json": "./package.json"
   },

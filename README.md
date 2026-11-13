@@ -1,7 +1,12 @@
-﻿# dsh-plugin-code-studio 路 浠ｇ爜鎬荤紪宸ヤ綔瀹?
-鍙傝€?`dsh-plugin-novel`锛堝皬璇存€荤紪宸ヤ綔瀹わ級涓?SuperAgent 缂栨帓鎻掍欢鍋氱殑**浠ｇ爜鐢熶骇**鐗堟湰銆?鎶€鏈€荤洃涓嶅啓浠ｇ爜锛屽彧杈撳嚭宸ヤ綔娴?+ 娲惧崟缁?13 涓鑹插瓙 Agent锛涙瘡寮犲崟杩?`code_task` 璐︺€?鏈?`write_scope` 鏂囦欢纭竟鐣屻€佽繃銆屾満鍣ㄩ棬 `code_check` + 鐙珛瀹℃牎銆嶄袱閬撻棬銆?
-## 瑁?
-鏈彃浠舵槸 profile 鍐呯殑 bundle 灞傦紝闈?`cordis.patch.yml` 鎻掑叆锛堜笌 novel 鍚屾瀯锛夛細
+# dsh-plugin-code-studio · 代码总编工作室
+
+参考 `dsh-plugin-novel`（小说总编工作室）与 SuperAgent 编排插件做的**代码生产**版本。
+技术总监不写代码，只输出工作流 + 派单给 13 个角色子 Agent；每张单走 `code_task` 账本、
+有 `write_scope` 文件硬边界、过「机器门 `code_check` + 独立审校」两道门。
+
+## 安装
+
+本插件是 profile 内的 bundle 层，靠 `cordis.patch.yml` 插入（与 novel 同构）：
 
 ```yaml
 - insert:
@@ -11,63 +16,117 @@
       name: 'dsh-plugin-code-studio/agent-models'
 ```
 
-瑙掕壊 鈫?妯″瀷鎸囨淳鍦ㄨ缃〉鐨?`code-studio-agent-models` 鏉＄洰閲岄厤锛坄enabled` + `assignments[{role,provider,model,reasoningEffort}]`锛夈€?鏈寚娲剧殑瑙掕壊缁ф壙鎶€鏈€荤洃鐨勬ā鍨嬨€?
-## 宸ュ叿
+角色 → 模型指派在设置页的 `code-studio-agent-models` 条目里配（`enabled` + `assignments[{role,provider,model,reasoningEffort}]`）；未指派的角色继承技术总监的模型。
 
-| 宸ュ叿 | 鐢ㄩ€?|
+## 工具
+
+| 工具 | 用途 |
 |---|---|
-| `code_roles` | 鍙栨煇瑙掕壊鍗″叏鏂囷紙娲惧崟鍓嶅繀璇伙紝闅忔彁绀鸿瘝涓€璧风粰瀛?Agent锛?|
-| `code_brief` | 缁勮瀹炵幇浠诲姟涓婁笅鏂囧寘锛堢洰鏍?+ 鐩稿叧鏂囦欢鎽樺綍 + 濂戠害 + 绾︽潫 + 楠屾敹锛?|
-| `code_check` | 鑷姩鏈哄櫒闂細鎸夌粰瀹氬懡浠ら€愭潯璺戯紝鍏ㄨ繃鎵?PASS锛堟妧鏈€荤洃鍞竴璺戝懡浠ょ殑绐勯€氶亾锛?|
-| `code_state` | 璐︽湰瑙嗗浘锛氫换鍔℃寜鐘舵€佸垎缁勶紝鐪嬩笅涓€姝ヨ娲捐皝 |
-| `code_task` | 浠诲姟璐︼細open/claim/renew/settle/release/cancel/pick/get/list/reclaim/events |
-| `code_dispatch` | 鎸夎鑹叉淳鍗曪紙鑷姩濂楃敤璁剧疆鐨勬ā鍨嬶級锛岀珛鍗宠繑鍥炲瓙浼氳瘽 id锛屼笉绛夛紱鏀寔 variants 骞宠鐗堟湰 |
-| `code_eval` | 娲惧崟鍓嶈瘎浼伴棬锛堝榻?SuperAgent Eval锛夛細鎸変换鍔″崟瀹屾暣搴﹁鍐?proceed/clarify/reject |
-| `code_review` | 闈欐€佸鏍℃壂鎻忥細寰呭姙鏍囪 / console.log / debugger / any / 绌?catch / 瓒呴暱鍑芥暟 / 纭紪鐮佸瘑閽?|
-| `code_map` | 渚濊禆鍥撅細鎵悇鍖呮竻鍗曞缓鍐呴儴渚濊禆鏈夊悜鍥俱€佸垪澶栭儴渚濊禆銆佹壘寰幆渚濊禆 |
-| `code_kb` | 浠ｇ爜鑼冧緥搴擄細鎸夎涔夛紙bge-m3 鍚戦噺锛岄€€璇嶆硶锛夋矇娣€/妫€绱€屽啓瀵逛簡鐨勪唬鐮併€嶈寖渚?|
-| `code_studio` | 宸ヤ綔鍖哄伐浣滃鍙拌处锛歩ssue 褰掑睘 region銆佹淳缁欐寔涔呭瓙浼氳瘽銆佸紑鍏崇洃鍚敹浠剁洰褰曘€佸缓 PR锛坄assign`/`issues`/`regions`/`set`/`dispatch`/`watch`/`pr`锛?|
+| `code_roles` | 取某角色卡全文（派单前必读，随提示词一起给子 Agent） |
+| `code_brief` | 组装实现任务上下文包（目标 + 相关文件摘录 + 契约 + 约束 + 验收） |
+| `code_check` | 自动机器门：按给定命令逐条跑，全过才 PASS（技术总监唯一跑命令的窄通道） |
+| `code_state` | 账本视图：任务按状态分组，看下一步该派谁 |
+| `code_task` | 任务账：open/claim/renew/settle/release/cancel/pick/get/list/reclaim/events |
+| `code_dispatch` | 按角色派单（自动套用设置的模型），立即返回子会话 id，不等；支持 variants 平行版本 |
+| `code_eval` | 派单前评估门（对齐 SuperAgent Eval）：按任务单完整度裁 proceed/clarify/reject |
+| `code_review` | 静态审校扫描：待办标记 / console.log / debugger / any / 空 catch / 超长函数 / 硬编码密钥 |
+| `code_map` | 依赖图：扫各包清单建内部依赖有向图、列外部依赖、找循环依赖 |
+| `code_kb` | 代码范例库：按语义（bge-m3 向量，退词法）沉淀/检索「写对了的代码」范例 |
+| `code_studio` | 工作区工作室台账：issue 归属 region、派给持久子会话、开关监听收件目录、建 PR（`assign`/`submit`/`issues`/`regions`/`set`/`dispatch`/`watch`/`pr`） |
 
-## 宸ヤ綔瀹わ細鐩戝惉 鈫?娲惧崟 鈫?鎶ュ憡锛堝浠撳簱锛?
-鎸夊伐浣滃尯锛堜細璇濈粦鐨勯偅涓枃浠跺す锛夌嫭绔嬬洃鍚紝閰嶇疆钀藉湪 `<repo>/.codewrite/watch.json`锛屼笉鐢ㄥ～璺緞锛?
-1. 浼氳瘽缁戝埌鏌愪釜浠撳簱鏂囦欢澶瑰悗锛宍code_studio`锛堟垨 `/code-studio-watch on`锛夊紑鍚洃鍚€?2. 寰€ `<repo>/.codewrite/inbox/` 涓竴涓?`*.json`锛歚{ "id"?: "12", "title": "淇櫥褰?, "body": "鍘熸枃", "folders": ["src/auth"] }`
-   鈥斺€?杞鍣ㄤ笅涓€杞紙榛樿 60s锛夋妸瀹冨彉鎴?issue 骞舵淳鍗曘€?3. **鎸佷箙瀛愪細璇濇寜 region 澶嶇敤**锛氬悓涓€鐗囨枃浠跺す鐨勫悗缁?issue 杩藉洖鍚屼竴涓瓙浼氳瘽涓茶杩藉姞锛屾崲鐗囨墠鏂板缓锛?   鍦ㄩ鐨?region 鍒嗙粍 鈮?2锛屽瓙浼氳瘽涓嶅緱鍐嶆淳 `tech-lead`銆?4. 瀛愪細璇濈粨绠楁椂锛屾姤鍛婂洖鍐?`issues.json`锛?*鍙充晶鏍忋€屽伐浣滃銆嶉〉**鍚屽睆鍛堢幇 issue 鍒楄〃 / 宸ヤ綔鐘舵€佸浘 / 鎶ュ憡锛屽乏渚х収甯告槸浼氳瘽鍖恒€?
-**鎵撳紑鏂瑰紡**锛氱偣浼氳瘽鍙充晶鏍忓簳閮ㄧ殑 `</>` 鍚姩鍣紝鎵撳紑銆屽伐浣滃銆嶅彸渚ф爮椤碉紙`sidebar.footer.action` 鈫?`sidebarRight.openTab('code-studio')`锛夈€?涓棿閭ｅ潡鏄?*宸ヤ綔鐘舵€佸浘锛堣妭鐐硅繛绾垮浘锛?*锛歚宸ヤ綔鍖?鈫?region 鈫?issue` 涓夊眰鑺傜偣鐢ㄨ繛绾胯繛璧锋潵锛岀洿鎺ョ湅鍝釜 region / 瀛?Agent 鍦ㄨ窇锛圧UNNING 鐨?region 鍜?issue 浼氶粍鑹查珮浜?鑴夊啿锛夛紝鐐?issue 鑺傜偣鍒囨崲鍙充晶鎶ュ憡銆傜偣銆屽缓 PR銆嶅 `DONE` 鐨?issue 璧?gh 寤?PR锛堣涓嬶級銆?
-### 宸ヤ綔鍖虹淮鎶ょ粍锛堣嚜鍔ㄥ垏鍒板伐浣滃妯″紡锛?
-姣忎釜宸ヤ綔鍖猴紙= 浼氳瘽缁戠殑閭ｄ釜鏂囦欢澶癸級鏈変竴涓?*缁存姢缁?*锛氬彧瑕佹弧瓒充换涓€鏉′欢锛屽氨鎶?*鍓嶅彴浼氳瘽鐨?Agent 棰勮鑷姩鍒囨垚 `code-editor`锛堜唬鐮佹€荤紪/鎶€鏈€荤洃妯″紡锛?*鈥斺€?
-1. 瀵硅瘽涓€寮€濮嬪氨鐢ㄣ€屼唬鐮佹€荤紪宸ヤ綔瀹ゃ€嶉璁惧彂璧凤紙`code-editor`锛夛紱
-2. 鎵嬪姩鎵撳紑宸ヤ綔瀹ゅ彸渚ф爮椤碉紙姝ゆ椂鑻ュ綋鍓嶄細璇濊繕鏄┖浼氳瘽銆佹病寮€濮嬪璇濓紝浼氳嚜鍔ㄥ垏锛夈€?
-瑙勫垯锛?- 鍙**绌轰細璇?*锛堣繕娌″彂杩囨秷鎭級鑷姩鍒囷紝涓嶆墦鏂繘琛屼腑鐨勬櫘閫氬璇濓紱
-- 姣忎釜浼氳瘽姣忛〉闈㈢敓鍛藉懆鏈熷彧灏濊瘯涓€娆★紝涓嶅弽澶嶆姠锛?- 闈㈡澘椤堕儴鏈?*妯″紡 chip**锛氭樉绀恒€屼唬鐮佹€荤紪宸ヤ綔瀹?/ 鏅€氥€嶏紱闈炲伐浣滃妯″紡鏃跺彸渚у嚭鐜般€屽垏鎹㈠埌宸ヤ綔瀹ゆā寮忋€嶆寜閽紝闅忔椂涓€閿垏銆?
-搴曞眰璧?`remote.agentPresets.select(sessionId, 'code-editor')`锛屾病鏈夊叏灞€鍓綔鐢紝鍙綔鐢ㄤ簬褰撳墠浼氳瘽銆?
+## 工作室：监听 → 派单 → 报告（多仓库）
 
-鐩戝惉閰嶇疆锛歚/code-studio-watch on|off|scan|interval <ms>`锛屾垨 `code_studio` 鐨?`watch` action銆?浠撳簱鏍瑰嚭鐜?`.codewrite/`锛歚issues.json`銆乣regions.json`銆乣watch.json`銆乣inbox/`銆乣editor/`锛堝伐浣滃尯璁板繂锛?鈥斺€?鍧囦负杩愯浜х墿锛屽缓璁繘 `.gitignore`銆?
-### 寤?PR锛堣蛋鏈満 gh CLI锛屾彃浠朵笉鐣?key锛?
-瀵规煇涓?`DONE` 鐨?issue锛宍/code-studio-watch pr <issueId>`锛堟垨 `code_studio` 鐨?`pr` action / 宸ヤ綔瀹ら〉銆屽缓 PR銆嶆寜閽級浼氾細
+按工作区（会话绑的那个文件夹）独立监听，配置落在 `<repo>/.codewrite/watch.json`，不用填路径。
 
-1. 鏍￠獙鐩爣鐩綍鏄?git 浠撳簱锛?2. `gh auth status` 鏍￠獙宸茬櫥褰曪紙鏈櫥褰曚細鎻愮ず `gh auth login`锛夛紱
-3. 鍒囧埌 `issue/<id>` 鍒嗘敮 鈫?鏈夋敼鍔ㄥ垯 `add + commit` 鈫?`git push -u origin issue/<id>`锛?4. `gh pr create --base main --head issue/<id> --title 鈥?--body 鈥锛岃繑鍥?PR 閾炬帴銆?
-**鍓嶆彁**锛氳 `gh`锛坄winget install --id GitHub.cli -e`锛夊苟 `gh auth login -h github.com` 涓€娆°€?鍑嵁瀛樺湪 gh 鑷繁鐨?`hosts.yml`锛屾彃浠?*涓嶄繚瀛樹换浣?GitHub 鍑嵁**銆傚彧寤?PR銆?*涓嶈嚜鍔ㄥ悎骞躲€佷笉鑷姩鎺?main**锛涘啿绐佺暀缁欎汉澶勭悊銆?
-### GitHub 婧愶紙浠?GitHub Issues 鎷夊崟锛?
-闄や簡鏈湴鏀朵欢鐩綍锛屼篃鑳界洿鎺ョ粦涓€涓?GitHub 浠撳簱锛屾妸瀹冪殑 open issues 褰撴潵婧愶紱閰嶇疆钀?`<repo>/.codewrite/github.json`锛?
-- 浼氳瘽閲?`/code-studio-watch github owner/repo`锛堜篃鎺ュ彈瀹屾暣 GitHub URL锛夆啋 寮€锛沗github off` 鈫?鍏炽€?- 绉佹湁浠撳簱鎴栨兂鎻愰搴︼細**鎵嬪姩瀛?PAT**銆備細璇濋噷 `/code-studio-watch token <pat>`锛屾垨鍦ㄣ€屽伐浣滃銆峊ab 椤堕儴鐨?**PAT** 涓€鏍忕矘璐达紙password 杈撳叆妗嗭級鐐逛繚瀛橈紱`/code-studio-watch token off`锛堟垨 Tab 閲岀偣娓呴櫎锛夊垹鎺夈€?- PAT 鍗曠嫭瀛?`<repo>/.codewrite/github-token`锛堢函鏂囨湰锛屼粎鏈満锛夛紝**涓嶈繘 `github.json`銆佷笉杩涚増鏈簱**锛沗github.json` 閲屽彧璁?`enabled/repo/labels/assignee/intervalMs`锛孴ab 鍙樉绀恒€屽凡瀛?鏈瓨銆嶏紝姘歌繙璇讳笉鍒版槑鏂囥€?- 涔熷彲鍦ㄣ€屽伐浣滃銆峊ab 椤堕儴鐨?**GitHub 婧?* 涓€鏍忓～ `owner/repo` 鐐圭粦瀹氥€?- 鎷夊彇瑙勫垯锛氬彧瑕?`state=open`銆佹帓闄?PR锛沬ssue 姝ｆ枃閲屽啓 `folders: src/a, src/b` 鎴栧嚭鐜板儚璺緞鐨?token锛屼細鑷姩鎶芥垚 region 鐨勬枃浠跺す銆?- 杞甯?ETag锛?04 涓嶉噸鎷夛級锛岄粯璁?120s锛沗/code-studio-watch scan` 绔嬪嵆鎷変竴娆°€?- 宸叉淳杩囩殑 issue 缂栧彿璁板湪 `issues.json`锛岄噸澶嶆媺鍙栦笉浼氶噸娲俱€?
-## 纭檺鍒讹紙code-guard锛?
-鎸傚湪 `presets/code-editor/agent.cordis.yml` 鐨勯璁惧瓙鎻掍欢锛屽彧瀵逛娇鐢ㄦ湰棰勮鐨勬€荤洃浼氳瘽鐢熸晥锛?- 灏侊細`write` / `edit` / `pwsh` / `bash` / `subagent` / `subagent_fork`銆?- 鏀捐鍙锛歚read` / `glob` / `grep` / `code_brief` / `code_state` / `code_check`銆?- 鍐欑櫧鍚嶅崟锛歚.codewrite/editor/*.md`锛堟€荤洃鐨勮蹇嗘枃浠讹級銆?- 瀛?Agent 涓嶅彈闄愬埗锛坓uard 鎸?`origin:'subagent'` / `delegationDepth` 鏀捐锛夛紝浣嗗厛鏍￠獙 `write_scope`銆?
-## 鐩綍
+1. 会话绑到某个仓库文件夹后，`code_studio`（或 `/code-studio-watch on`）开启监听。
+2. 往 `<repo>/.codewrite/inbox/` 丢一个 `*.json`：`{ "id"?: "12", "title": "修登录", "body": "原文", "folders": ["src/auth"] }`
+   —— 轮询器下一轮（默认 60s）把它变成 issue 并派单。folders 可省略，会从 body 里的路径自动抽。
+3. **持久子会话按 region 复用**：同一片文件夹的后续 issue 追回同一个子会话串行追加，换片才新建；
+   在飞的 region 分组 ≤ 2，子会话不得再派 `tech-lead`。
+4. 子会话结算时，报告回写 `issues.json`。**右侧栏「工作室」页**同屏呈现 issue 列表 / 工作状态图 / 报告，左侧照常是会话区。
+
+**打开方式**：点会话右侧栏底部的 `</>` 启动器，打开「工作室」右侧栏页（`sidebar.footer.action` → `sidebarRight.openTab('code-studio')`）。
+中间那块是**工作状态图（节点连线图）**：`工作区 → region → issue` 三层节点用连线连起来，直接看哪个 region / 子 Agent 在跑（RUNNING 的 region 和 issue 会黄色高亮脉冲），点 issue 节点切换右侧报告。点「建 PR」对 `DONE` 的 issue 走 gh 建 PR（见下）。
+
+### 前台提交 issue（规范化接口）
+
+前台 Agent 不手搓 prompt/folders，统一用 `code_studio` 的 `submit` action：
 
 ```
-lib/          index.js(娉ㄥ唽) code-guard.js dispatch.js orchestrator.js task-registry.js
+code_studio { action: "submit", id: "12", title: "修登录", body: "改 src/auth/token.ts", folders?: ["src/auth"] }
+```
+
+插件会归一化 folders/status、按 issue 自动组任务正文、按文件夹归 region 并派单记账。三个来源（本地收件 / GitHub issue / 前台 submit）都过同一个规范化入口 `lib/studio-intake.js`，形状统一后再进台账。
+
+### 工作区维护组（自动切到工作室模式）
+
+每个工作区（= 会话绑的那个文件夹）有一个**维护组**：只要满足任一条件，就把**前台会话的 Agent 预设自动切成 `code-editor`（代码总编/技术总监模式）**——
+
+1. 对话一开始就用「代码总编工作室」预设发起（`code-editor`）；
+2. 手动打开工作室右侧栏页（此时若当前会话还是空会话、没开始对话，会自动切）。
+
+规则：
+- 只对**空会话**（还没发过消息）自动切，不打断进行中的普通对话；
+- 每个会话每页面生命周期只尝试一次，不反复抢；
+- 面板顶部有**模式 chip**：显示「代码总编工作室 / 普通」；非工作室模式时右侧出现「切换到工作室模式」按钮，随时一键切。
+
+底层走 `remote.agentPresets.select(sessionId, 'code-editor')`，没有全局副作用，只作用于当前会话。
+
+监听配置：`/code-studio-watch on|off|scan|interval <ms>`，或 `code_studio` 的 `watch` action。仓库根出现 `.codewrite/`：`issues.json`、`regions.json`、`watch.json`、`inbox/`、`editor/`（工作区记忆）——均为运行产物，建议进 `.gitignore`。
+
+### 建 PR（走本机 gh CLI，插件不留 key）
+
+对某个 `DONE` 的 issue，`/code-studio-watch pr <issueId>`（或 `code_studio` 的 `pr` action / 工作室页「建 PR」按钮）会：
+
+1. 校验目标目录是 git 仓库；
+2. `gh auth status` 校验已登录（未登录会提示 `gh auth login`）；
+3. 切到 `issue/<id>` 分支 → 有改动则 `add + commit` → `git push -u origin issue/<id>`；
+4. `gh pr create --base main --head issue/<id> --title … --body …`，返回 PR 链接。
+
+**前提**：装 `gh`（`winget install --id GitHub.cli -e`）并 `gh auth login -h github.com` 一次。凭据存在 gh 自己的 `hosts.yml`，插件**不保存任何 GitHub 凭据**。只建 PR，**不自动合并、不自动推 main**；冲突留给人处理。
+
+### GitHub 源（从 GitHub Issues 拉单）
+
+除了本地收件目录，也能直接绑一个 GitHub 仓库，把它的 open issues 当来源；配置落 `<repo>/.codewrite/github.json`。
+
+- 会话里 `/code-studio-watch github owner/repo`（也接受完整 GitHub URL）→ 开；`github off` → 关。
+- 私有仓库或想提额度：**手动存 PAT**。会话里 `/code-studio-watch token <pat>`，或在「工作室」页顶部的 **PAT** 一栏粘贴（password 输入框）点保存；`/code-studio-watch token off`（或点清除）删掉。
+- PAT 单独存 `<repo>/.codewrite/github-token`（纯文本，仅本机），**不进 `github.json`、不进版本库**；`github.json` 里只记 `enabled/repo/labels/assignee/intervalMs`，面板只显示「已存/未存」，永远读不到明文。
+- 也可在「工作室」页顶部的 **GitHub 源** 一栏填 `owner/repo` 点绑定。
+- 拉取规则：只要 `state=open`、排除 PR；issue 正文里写 `folders: src/a, src/b` 或出现像路径的 token，会自动抽成 region 的文件夹。
+- 轮询带 ETag（304 不重拉），默认 120s；`/code-studio-watch scan` 立即拉一次。
+- 已派过的 issue 编号记在 `issues.json`，重复拉取不会重派。
+
+## 硬限制（code-guard）
+
+挂在 `presets/code-editor/agent.cordis.yml` 的预设子插件，只对使用本预设的总监会话生效：
+
+- 封：`write` / `edit` / `pwsh` / `bash` / `subagent` / `subagent_fork`。
+- 放行只读：`read` / `glob` / `grep` / `code_brief` / `code_state` / `code_check`。
+- 写白名单：`.codewrite/editor/*.md`（总监的记忆文件）。
+- 子 Agent 不受限制（guard 按 `origin:'subagent'` / `delegationDepth` 放行），但先校验 `write_scope`。
+
+## 目录
+
+```
+lib/          index.js(注册) code-guard.js dispatch.js orchestrator.js task-registry.js
               session-roles.js packet.js runner.js agent-models.js
-              studio-store.js studio-memory.js studio-dispatch.js studio-watch.js studio-github.js studio-pr.js
+              studio-store.js studio-memory.js studio-dispatch.js studio-watch.js
+              studio-github.js studio-pr.js studio-intake.js
 presets/code-editor/
               preset.yml agent.cordis.yml orchestration.md roles/*.md(13)
 ```
 
-姣忎釜 `studio-*.js` 閮芥槸鍙嫭绔嬭嚜娴嬬殑绾€昏緫妯″潡锛坄node lib/studio-store.js` 绛夎嚜甯?demo锛夈€?
-## 澶嶇敤璇存槑锛坧onytail锛?
-`task-registry.js` / `orchestrator.js` / `dispatch.js` / `session-roles.js` 鍥涗唤鐢?novel 鎻掍欢閫愬瓧鎼潵锛?鍙敼浜嗙姸鎬佺洰褰曞墠缂€锛坄.codewrite/`锛変笌宸ュ叿鍚嶏紙`code_dispatch`锛夈€備笉涓轰竴涓父閲忓鍒舵暣浠芥ā鍧楋紝涔熶笉閲嶉€犲凡鏈夌殑缂栨帓閫昏緫銆?
-## 浠撳簱渚х姸鎬?
-璺戣捣鏉ュ悗浠撳簱鏍逛細鍑虹幇 `.codewrite/`锛歚agents/`锛堜换鍔¤处 registry.json + 浜嬩欢 .jsonl + orphaned/锛夈€?`editor/`锛堟€荤洃璁板繂锛夈€乣ledger/`锛堟。妗堜氦鎺ワ級銆乣issues.json`/`regions.json`/`watch.json`/`github.json`/`inbox/`锛堝伐浣滃鍙拌处涓庣洃鍚潵婧愶級銆?杩欐槸杩愯浜х墿锛屽缓璁繘 `.gitignore`锛堟湰浠撳簱宸查粯璁ゅ拷鐣ワ級銆?
-## 璁稿彲
+每个 `studio-*.js` 都是可独立自测的纯逻辑模块（`node lib/studio-store.js` 等自带 demo）。
 
-MIT銆傝 [LICENSE](./LICENSE)銆?
+## 复用说明（ponytail）
+
+`task-registry.js` / `orchestrator.js` / `dispatch.js` / `session-roles.js` 四份从 novel 插件逐字搬来，只改了状态目录前缀（`.codewrite/`）与工具名（`code_dispatch`）。不为一个常量复制整份模块，也不重造已有的编排逻辑。
+
+## 仓库侧状态
+
+跑起来后仓库根会出现 `.codewrite/`：`agents/`（任务账 registry.json + 事件 .jsonl + orphaned/）、`editor/`（总监记忆 + `regions/` 分区记忆）、`ledger/`（档案交接）、`issues.json`/`regions.json`/`watch.json`/`github.json`/`inbox/`（工作室台账与监听来源）。这是运行产物，建议进 `.gitignore`（本仓库已默认忽略）。
+
+## 许可
+
+MIT。见 [LICENSE](./LICENSE)。
