@@ -1,32 +1,27 @@
 # 未做清单（启动工程前先拍板）
 
 > 全部结论按代码实测核对（2026-11-13），带 `文件:行号` 锚点。按「会不会真出事」排序。
+> ✅ 1-4 已修（本轮）；5-13 未做。
 
-## 🔴 会真出事（干活链路断）
+## 🔴 会真出事（干活链路断）—— ✅ 已修
 
-### 1. 「中止」按钮点了没用 —— cancel 子命令不存在
-- 客户端发命令：`lib/client.js:1226` → `/code-studio-watch cancel <id>`
-- 服务端 handler 子命令只有 `on / off / interval / github / token / pr / scan`（`lib/index.js:468-535`），**没有 cancel**
-- 后果：点「中止」实际走兜底分支打印一行状态，子会话继续跑
-- 修法：handler 加 `sub === 'cancel'` 分支 → `subagents.interrupt(childId, {kind:'ancestor', agent})` + `settleIssue(dir, id, {ok:false, error:'人工中止'})`；需要 issue→childId 映射（`STUDIO_CHILDREN` 反查）
+### 1. ✅ 「中止」按钮点了没用 —— cancel 子命令不存在
+- 客户端发命令：`lib/client.js` → `/code-studio-watch cancel <id>`
+- 修法：handler 加 `sub === 'cancel' || 'stop'` 分支，`subagents.interrupt(childId,{kind:'ancestor',agent})` + FIFO 队列摘除 + `settleIssue(dir,id,{ok:false,error:'人工中止'})`
+- 探针：`_probe/cancel-check.mjs`（无 id 报用法 / 正常中止指向对 childId / 标 FAILED / 无 childId 报错）
 
-### 2. 建 PR 在仓库根跑，不在 worktree 跑
-- createPr 收的 `dir` 是仓库根：命令入口 `lib/index.js:513`、工具入口 `lib/index.js:1218-1222`
-- 子 Agent 的改动其实落在 **worktree**（`studio-dispatch.js` 把 `worktree` 存进 region 和 issue）
-- 后果：PR 分支里没有子 Agent 的改动（推了个空分支），或把主工作树的脏改动一起推上去
-- 修法：`const wt = issue.worktree || regions[issue.region]?.worktree || dir;` 用 `wt` 去跑 `createPr`
+### 2. ✅ 建 PR 在仓库根跑，不在 worktree 跑
+- 新增 `resolvePrDir({dir,issue,regions})`（`studio-pr.js`）：issue.worktree → region.worktree → 仓库根
+- 命令入口与工具入口 createPr 都用它算 prDir；探针覆盖
 
-### 3. changedFiles 运行时永远为空
-- 运行时结算只传 `{ok, report}`：`lib/index.js:303`
-- `changedFiles` 只在 demo 里传过（`studio-dispatch.js:344`）
-- 客户端却照读：`lib/client.js:1191`
-- 后果：Tab「改动文件」永远空
-- 修法：结算时在 worktree 里 `git status --porcelain`（复用 `runner.runCommand`），解析出改动文件列表传给 `settleIssue`
+### 3. ✅ changedFiles 运行时永远为空
+- 结算时在 issue 的 worktree（退回仓库根）跑 `git status --porcelain`，`parsePorcelain()` 解析后传给 `settleIssue`
+- `parsePorcelain` demo 覆盖
 
-### 4. PR 建好后不回写台账
-- 命令入口 `lib/index.js:518`、工具入口 `lib/index.js:1232` 都只 `return` 文本，不落盘
-- 后果：Tab 里看不到 PR 链接，刷新就丢
-- 修法：成功后 `upsertIssue(dir, {id, prUrl:res.url, prBranch:res.branch})`，客户端渲染这两个字段
+### 4. ✅ PR 建好后不回写台账
+- 两处 createPr 成功后 `upsertIssue(dir,{id,prUrl,prBranch})`
+- 客户端报告区渲染 PR 链接（`.dsh-code-sp-pr`）
+
 
 ## 🟡 体验/正确性打折
 
