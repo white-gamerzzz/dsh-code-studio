@@ -1,6 +1,6 @@
 {
   "name": "dsh-plugin-code-studio",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
   "description": "代码总编工作室：技术总监不写代码，只输出工作流并派单给 13 个角色子 Agent；每张单进 code_task 账、有 write_scope 文件 glob、过机器门 code_check 与独立审校两道门。",
   "meta": {
@@ -18,6 +18,9 @@
     },
     "./code-guard": {
       "default": "./lib/code-guard.js"
+    },
+    "./pozhang-settings": {
+      "default": "./lib/pozhang-settings.js"
     },
     "./client": "./lib/client.js",
     "./lib/task-registry": "./lib/task-registry.js",
@@ -39,11 +42,15 @@
     "./lib/studio-pr": "./lib/studio-pr.js",
     "./lib/studio-intake": "./lib/studio-intake.js",
     "./cordis.patch.yml": "./cordis.patch.yml",
+    "./pozhang": {
+      "default": "./pozhang/index.js"
+    },
     "./package.json": "./package.json"
   },
   "files": [
     "lib",
     "presets",
+    "pozhang",
     "cordis.patch.yml",
     "README.md"
   ],
@@ -81,5 +88,17 @@
         "@deepseek-ai/dsh-client-ui-sidebar-right"
       ]
     }
+  },
+  "scripts": {
+    "relay": "node pozhang/relay.js",
+    "relay:test": "node pozhang/relay.test.mjs",
+    "selfcheck": "node pozhang/selfcheck.mjs",
+    "test:pozhang": "node pozhang/smoke.mjs && node pozhang/patch.test.mjs && node pozhang/autoroute.test.mjs && node pozhang/relay.test.mjs && node pozhang/chain.test.mjs && node pozhang/chain-fallback.test.mjs && node pozhang/intercept.test.mjs && node pozhang/dispatcher.test.mjs",
+    "abtest": "node pozhang/abtest.mjs",
+    "abtest2": "node pozhang/abtest2.mjs",
+    "relay:switch": "node pozhang/route-switch.mjs",
+    "relay:e2e": "node pozhang/relay-e2e.mjs",
+    "chain:e2e": "node pozhang/chain-e2e.mjs",
+    "chain:verify": "node pozhang/chain-verify.mjs"
   }
 }

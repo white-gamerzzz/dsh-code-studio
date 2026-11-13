@@ -123,6 +123,62 @@ presets/code-editor/
 
 `task-registry.js` / `orchestrator.js` / `dispatch.js` / `session-roles.js` 四份从 novel 插件逐字搬来，只改了状态目录前缀（`.codewrite/`）与工具名（`code_dispatch`）。不为一个常量复制整份模块，也不重造已有的编排逻辑。
 
+## 破甲内置层（pozhang/）
+
+插件**自带破甲**，装上重启 dsh 即生效，无需另开注入程序：
+
+- 启动时在 `apply()` 里幂等写入 `~/.dsh/AGENTS.md` 的标记块（内容一致则跳过，不重装技能）
+- 同时把技能库装到 `~/.dsh/skills/`（与破障桌面版同一套 `codex-skills-v4`）
+- 插件进程活着 = 守护活着：每 30s 校验标记块，被编辑/覆盖自动补回
+- **子 Agent 同样覆盖**：dsh 是否把 AGENTS.md 传给子会话是运行时行为，不能假设——派单时把破甲正文**显式前置**到子会话初始 prompt（三条派单路径全部覆盖：`code_dispatch` 常驻/一次性、`code_studio dispatch`、收件/GitHub 监听自动派单）；追回已有子会话时补一句锚点，防上下文压缩后约束漂移
+- **压缩三层防御**（`dsh-compaction` 摘要会把早期消息吃掉，头部注入最先受损）：
+  1. 正文末尾带**自愈条款**——约定不可见时模型自行读取 `~/.dsh/AGENTS.md` 恢复，不依赖运行时事件
+  2. **压缩守望**：每 20s 检查已登记子会话的会话日志，日志缩水 >35% 判定为压缩，给该子会话追发锚点（5 分钟冷却，`subagents.sendMessage`）
+  3. 追回既有子会话时每次都带锚点，保证"最近一条消息"里始终有约束（压缩摘要优先保留近期消息）
+- **身份不被压缩吃掉**：压缩最先吃掉会话开头（角色卡所在处），所以每次派单/追发都在消息**末尾**追加角色感知锚点：`你当前的角色是 <role>；角色卡若已不可见，先调用 code_roles 取回`。锚点落在压缩的"最近消息"保护窗口内
+- **不碰任何其它插件**：不使用 dsh-prompt-inject 之类的第三方配置通道；状态只落在 `~/.dsh/AGENTS.md` 的标记块、`~/.dsh/.pozhang-state.json` 与本插件目录内
+- 资源全部内置：`pozhang/assets/破障v4.md`（提示词正文）、`pozhang/assets/codex-skills-v4/`
+
+```bash
+/hz              # 查看状态（注入是否最新、字符数、技能数）
+/hz on           # 立即重新注入
+/hz off          # 卸载：摘掉 AGENTS.md 注入块并清理本插件装的技能
+```
+
+### 两种生效方式
+
+**① 进程内拦截（默认，推荐）**
+
+学 billion-context：插件在 dsh 进程内接管出站 `fetch`。请求 URL 里就是该 provider 的上游，所以**会话选了哪家 provider，请求就流向哪家**——不需要改任何 Base URL，也不需要按前缀分流。
+
+- 只处理命中路由表主机的 JSON 请求，下载/插件市场等流量完全不碰
+- 缺破障就补进 `system` / `instructions`，齐全则字节级原样放行
+- 计数与会话表在设置页可见（已处理 / 补丁 / 放行 / 按 provider 分列）
+
+**② HTTP 中继（备选，供非 fetch 通道）**
+
+
+dsh **设置 → 代码工作室** 一页两块：**破障中继在上、角色模型指派在下**。两块共用同一套排版基线（1px 明显边框、面板底色、等宽数值对齐、表头大写小字），风格与宿主统一：
+
+- 开关 / 端口（保存后约 5 秒收敛到中继进程，开关是自启动的唯一权威）
+- **按 provider 路由（不是全局一个上游）**：中继从 dsh 的 `profiles/*/cordis.patch.yml` 读出 `provider → baseURL` 路由表，请求路径带前缀就按该 provider 转发：`/<provider>/v1/...`。多家供应商各走各的，不会串流；多 provider 但请求没带前缀时返回 400 并列出可用前缀，不猜
+- 实时卡片：运行状态、活跃会话、补丁次数、原样放行、运行时长
+- 会话表：标识 / 请求数 / 补丁数 / 最后活动
+- 面板直达链接 `http://127.0.0.1:<port>/_pozhang/panel`
+
+工作原理：出站请求先过中继，检查 body 里破障正文与角色锚点是否齐全——齐全原样透传，缺失就补到 **system/instructions 层**再转发。system 层不参与上下文折叠，所以压缩动不了它。
+
+- **中继跑在插件进程内**（不是子进程）：Windows 上 detached 子进程会随父进程 job 被回收（实测存活数秒即消失），进程内实现的寿命天然等于 dsh，无孤儿进程
+- **一个服务、一个端口、所有会话共享**：会话只登记元数据，空闲 10 分钟淘汰，无会话级常驻资源
+- 零依赖；SSE 流式透传；`gzip/deflate/br` 自动解码
+- 仍需手动一步：把 dsh 模型设置里该 provider 的 **Base URL** 指到 `http://127.0.0.1:<port>`（API Key 原样透传）。这是 dsh 自身设置，插件无法代改
+
+命令行等价操作：`/hz relay on [端口] [上游]`、`/hz relay off`、`/hz relay`（看状态）。
+
+改提示词只改 `pozhang/assets/破障v4.md`（或 `pozhang/index.js` 的 `DEFAULT_PROMPT`），重启 dsh 后下次启动自动升级。卸载/升级不会动用户自己在 `AGENTS.md` 里写的其它内容。
+
+> 生效时机：AGENTS.md 只在**会话启动时**读取，注入完成后需重启 dsh 或开新会话。
+
 ## 仓库侧状态
 
 跑起来后仓库根会出现 `.codewrite/`：`agents/`（任务账 registry.json + 事件 .jsonl + orphaned/）、`editor/`（总监记忆 + `regions/` 分区记忆）、`ledger/`（档案交接）、`issues.json`/`regions.json`/`watch.json`/`github.json`/`inbox/`（工作室台账与监听来源）。这是运行产物，建议进 `.gitignore`（本仓库已默认忽略）。
