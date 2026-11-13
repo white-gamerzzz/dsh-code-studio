@@ -44,10 +44,10 @@
    —— 轮询器下一轮（默认 60s）把它变成 issue 并派单。
 3. **持久子会话按 region 复用**：同一片文件夹的后续 issue 追回同一个子会话串行追加，换片才新建；
    在飞的 region 分组 ≤ 2，子会话不得再派 `tech-lead`。
-4. 子会话结算时，报告回写 `issues.json`；**右侧栏「工作室」页**同屏四区（issue 列表 / 工作树树状图 / 报告 / 工作区）直接渲染。
+4. 子会话结算时，报告回写 `issues.json`；**右侧栏「工作室」页**同屏呈现 issue 列表 / 工作状态图 / 报告，左侧照常是会话区。
 
 **打开方式**：点会话右侧栏底部的 🧰 启动器，打开「工作室」右侧栏页（`sidebar.footer.action` → `sidebarRight.openTab('code-studio')`）。
-工作树按选中 issue 的 region 文件夹逐层懒加载渲染成树；点「建 PR」对 `DONE` 的 issue 走 gh 建 PR（见下）。
+中间那块是**工作状态图（节点连线图）**：`工作区 → region → issue` 三层节点用连线连起来，直接看哪个 region / 子 Agent 在跑（RUNNING 的 region 和 issue 会黄色高亮/脉冲），点 issue 节点切换右侧报告。点「建 PR」对 `DONE` 的 issue 走 gh 建 PR（见下）。
 
 监听配置：`/code-studio-watch on|off|scan|interval <ms>`，或 `code_studio` 的 `watch` action。
 仓库根出现 `.codewrite/`：`issues.json`、`regions.json`、`watch.json`、`inbox/`、`editor/`（工作区记忆）
