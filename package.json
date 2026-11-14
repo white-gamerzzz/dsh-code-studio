@@ -48,7 +48,8 @@
     "./pozhang": {
       "default": "./pozhang/index.js"
     },
-    "./package.json": "./package.json"
+    "./package.json": "./package.json",
+    "./lib/studio-repo": "./lib/studio-repo.js"
   },
   "files": [
     "lib",
