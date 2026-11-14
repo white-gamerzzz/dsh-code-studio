@@ -48,6 +48,21 @@
 - 本地默认 60s（`studio-watch.js DEFAULT_INTERVAL_MS=60000`）、GitHub 120s；`fs.watch` 有意跳过（`ponytail:` 注释留升级位）。
 - 要秒级再上 `ctx.get('fs').watch`。
 
+## 🟡 路由机制（用户 m04601「路由机制够完善吗」→ m04629「都改」）—— ✅ 已修
+
+### 14. ✅ matchRegion 只认精确文件夹，子目录会碎成新 region
+- `studio-store.js` 的 `matchRegion` 加方向覆盖 `covers(r,f)`：`['src/auth']` 的 region 现在能命中 `['src/auth/sub']`、`['src/auth/x/y']`；父/子双向都认。
+
+### 15. ✅ 抽不出 folders 就拒单
+- `studio-intake.js` `normalizeIssue` 不再把 folders 空记入 `missing`，改返回 `unrouted:true`；`planRegion` 把无文件夹的 issue 统一兜进 `unrouted` 区（同区串行），不再拒单、也不各自乱开 region。
+
+### 16. ✅ 无语义归类（口语化 issue 派不出去）
+- 新增 `lib/studio-route.js`：`listCandidateDirs`（扫仓库目录）+ `classifyFolders`（一次 `ctx.llm.stream` 从目录清单里挑 1~3 个）+ `parsePickedFolders`。
+- `dispatchIssue` 加 `semanticRoute` 钩子：仅当 folders 抽空时调用一次；判不出就 `[]` → 走 unrouted 兜底。`index.js` 三处派单入口都接 `makeSemanticRoute(dir)`（用已配角色 route，无 llm 则跳过）。
+
+### 17. ⏸️ 第二层「子会话自报 / 重路由」仍未做（决定：先不做）
+- 现在判错最多进 unrouted 兜底串行，不会丢单；真要子会话在代码里确认后回改 region，属后续增强。
+
 ## ⚪ 工程化/验证
 
 ### 11. 没在真 GUI 里点过

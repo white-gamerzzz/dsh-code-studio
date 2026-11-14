@@ -41,6 +41,7 @@
     "./lib/studio-github": "./lib/studio-github.js",
     "./lib/studio-pr": "./lib/studio-pr.js",
     "./lib/studio-intake": "./lib/studio-intake.js",
+    "./lib/studio-route": "./lib/studio-route.js",
     "./cordis.patch.yml": "./cordis.patch.yml",
     "./pozhang": {
       "default": "./pozhang/index.js"
