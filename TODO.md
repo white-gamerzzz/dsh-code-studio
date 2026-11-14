@@ -83,3 +83,31 @@
 - 手动建 issue 的表单——用户明确不要，改前台 `code_studio submit` 规范化接口，已做（`f06a16d`）
 - 三个真 bug（建 worktree / folders 交集检查 / 记忆写回）已修（`f68d6de`）
 - gh CLI 已登录有效（white-gamerzzz），建 PR 链路通
+
+## ✅ 审查后 7 步整改（2026-11-15，全部完成）
+> 审查发现「架构层 `.code-studio` 完全没落地、记忆不分会话会串、非 git 派单必挂、无仓库发现、PR 无 --repo、中文乱码」。
+> 按 1→7 依次做，每步自检全绿后 push。
+
+### C1 ✅ 非 git 目录派单（`319dbd5`）
+- `studio-dispatch.js` 加 `isGitWorkTree(dir,runCommand)`；`dispatchIssue` 加 `runCommand`，非 git 时跳过 worktree、`cwd` 钉仓库目录就地改。
+
+### C3 ✅ PR fork 场景（`d176c4f`）
+- `createPr` 支持 `prRepo`/`prHeadOwner` → `gh pr create --repo <prRepo> --head <owner>:<branch>`；命令/工具/issue 字段全接上。
+
+### A ✅ 索引层 `lib/studio-workspace.js`（`39794b5`）
+- `.code-studio/index.json` + `sessions/<sid>/session.json` 读写；`upsertRepo/upsertSession/loadSession/removeSession/ensureWorkspaceDir`；GitHub 绑定/解绑时落会话绑定。
+
+### B ✅ 记忆会话隔离（`2f0ac1d`）
+- `studio-memory.js` 新增 `.code-studio/sessions/<sid>/{memory.md,agents/,regions/}` 四层读写与会话隔离注入；结算回写改会话级，不再写公共 `.codewrite/editor/MEMORY.md`（旧路径只读兼容）。
+
+### A ✅ 规则层 `lib/studio-rules.js`（`9e65413`）
+- `memory/rules.json`：`addRule/removeRule/listRules/ruleAppliesTo/rulesSectionText`；scope=all|角色表|session（session 转会话记忆）；超 50 条滚动 `rules.archive.json`；`code_studio action=rule`；派单 prompt 与前台 systemPrompt 都按角色注入。
+
+### C2 ✅ 仓库发现 `lib/studio-repo.js`（`c249c57`）
+- `discoverRepos`（扫 .git 子目录）/`parseRemotes`（解析 git remote -v，含 upstream）/`readRemotes`+`enrichRemotes`（异步补真实 remote）/`matchRepo`/`resolveIssueRepo`/`prDestination`（有 upstream 即判 fork、PR 提上游、head 用 origin owner）/`cloneRepo`。
+- index.js：三处派单先 `resolveIssueDir`（按 issue.repo / folders 首段归属到子仓库）；PR 分支自动认 fork 目的地；`recordSessionBinding` 把发现的仓库登进索引；新增 `code_studio action=repos` 列出工作区 git 仓库。
+
+### D ✅ 中文乱码 —— 复核为误报
+- 逐字节核验：`lib/index.js`、`lib/client.js`、`README.md`、`TODO.md`、`ARCHITECTURE.md`、所有 lib/*.js 均 **U+FFFD=0、无 mojibake**。此前的「乱码」是 PowerShell `Get-Content` 把 UTF-8 当 GBK 显示的假象。
+- 仅 `pozhang/assets/codex-skills-v4/.../burpsuite-mcp-guide.md`（第三方 vendored 附件）确有 GBK 双重编码，且为不可逆的部分损坏；它不属于插件源码、不影响运行，保留原样（要重下上游即可）。
+
