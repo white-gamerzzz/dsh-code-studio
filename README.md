@@ -97,6 +97,29 @@ code_studio { action: "submit", id: "12", title: "修登录", body: "改 src/aut
 - 轮询带 ETag（304 不重拉），默认 120s；`/code-studio-watch scan` 立即拉一次。
 - 已派过的 issue 编号记在 `issues.json`，重复拉取不会重派。
 
+**双向同步**：`source==='github'` 的 issue 结算后会把处理结果作为评论回写原 issue；建 PR 成功后把 PR 链接评论回去。**不自动关单**（要等 PR 合并，由人在 GitHub 上关，避免误关）。
+
+### 外置 Agent 写入接口（HTTP）
+
+除了让外部程序往 `<repo>/.codewrite/inbox/*.json` 丢文件，插件还在本机起了一个 HTTP 入口，程序化提交 issue：
+
+```
+POST http://127.0.0.1:&lt;ds h端口&gt;/code-studio/intake
+content-type: application/json
+{
+  "repo": "C:/path/to/your-repo",   // 或项目名；省略用当前会话 cwd
+  "id": "77",                        // 可省，省略自动生成
+  "title": "登录 token 过期不刷新",   // 必填（或 body 非空）
+  "body": "在 src/auth/login.ts 加判空",
+  "folders": ["src/auth"]            // 可省：从 body 抽，抽不到→ unrouted 兜底
+}
+→ 200 { ok:true, id:"77", status:"READY", unrouted:false, dir, inbox, file }
+```
+
+- 落盘走和 inbox 同一条路：规范化后写进该工作区的 `.codewrite/inbox/`，由该工作区 watcher 扫走派单（前提是 `/code-studio-watch on` 且工作区会话活着）。
+- 校验：非 POST→405；body 非 JSON→400；缺 id 且无 fallback 时会补一个。
+- 鉴权：若 host 的 `connection` 服务提供了 `requestRejection`，会先过它（浏览器来源的 CSRF 保护）；没有就靠本机回环地址。
+
 ## 硬限制（code-guard）
 
 挂在 `presets/code-editor/agent.cordis.yml` 的预设子插件，只对使用本预设的总监会话生效：
@@ -112,7 +135,7 @@ code_studio { action: "submit", id: "12", title: "修登录", body: "改 src/aut
 lib/          index.js(注册) code-guard.js dispatch.js orchestrator.js task-registry.js
               session-roles.js packet.js runner.js agent-models.js
               studio-store.js studio-memory.js studio-dispatch.js studio-watch.js
-              studio-github.js studio-pr.js studio-intake.js
+              studio-github.js studio-pr.js studio-intake.js studio-route.js
 presets/code-editor/
               preset.yml agent.cordis.yml orchestration.md roles/*.md(7)
 ```
