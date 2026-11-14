@@ -104,6 +104,82 @@
 
 读回统一走 `systemPrompt.section`：根从「会话 cwd」换成 `.code-studio/`，按层拼接、各取尾部 ≤40 行防撑爆（照旧用现有的滚动/归档机制）。
 
+## 工作区规则（rules）—— 可运行时增改、按对象生效
+
+> 用户口述一句「今天技术总监调工具卡了很久」，Agent 就该把它记成**一条规则**，写进工作区；之后**适用的 Agent** 干活时自动读到它。这比「往 memory.md 追加一行」更进一步：规则带**适用对象**，不同角色读到的规则不同。
+
+### 存放与结构
+
+`<工作区根>/.code-studio/memory/rules.json`（结构化，便于按对象过滤；不塞进 workspace.md 那种纯文本）。
+
+```json
+{
+  "version": 1,
+  "rules": [
+    {
+      "id": "r-001",
+      "text": "连续调用工具超过约 20 次或单步卡超过 2 分钟，先停下来汇报进度，不要闷头刷",
+      "scope": { "kind": "role", "role": "tech-lead" },
+      "tags": ["工具", "停滞", "效率"],
+      "createdBy": "tech-lead",
+      "createdAt": "2026-11-15T01:30:00+08:00",
+      "source": "用户口述：技术总监调工具长时间停滞"
+    },
+    {
+      "id": "r-002",
+      "text": "提交信息用 feat/fix(scope): 格式；禁止 as any",
+      "scope": { "kind": "all" },
+      "tags": ["约定", "提交"],
+      "createdBy": "tech-lead",
+      "createdAt": "2026-11-15T01:31:00+08:00",
+      "source": "用户口述"
+    }
+  ]
+}
+```
+
+### `scope.kind` 三种（正好对应用户说的「全 Agent / 仅某个 Agent / 角色提示词」）
+
+| kind | 含义 | 存哪 |
+|---|---|---|
+| `all` | **全 Agent**（前台 + 所有子Agent）都注入 | `rules.json` |
+| `role` / `roles` | **仅某（几）个角色**（如只对 `reviewer`） | `rules.json` |
+| （不入库） | **角色固有纪律**：跟角色绑死、不随工作区变 | `presets/code-editor/roles/<role>.md` |
+
+第四条隐藏层级：**`scope.kind:"session"`** = 只本会话——等价于写进 `sessions/<sid>/memory.md`，不进 `rules.json`（不污染别的会话）。
+
+**边界判定**：这条规则是「换个人/换个项目就不成立了」→ 会话记忆；「跟这个角色天生该做的事绑死」→ 角色提示词（改插件）；「对这个项目长期成立、且可能只该某些角色守」→ `rules.json`。
+
+### Agent 自己写（工具入口）
+
+扩 `code_studio` 工具，加 `action:"rule"`：
+
+- `code_studio action=rule op=add text="…" scope=all|tech-lead,reviewer tags=工具,停滞`
+- `code_studio action=rule op=list [scope=…]`
+- `code_studio action=rule op=remove id=r-001`
+
+写入前做轻规范化：压成一行、限长（≤200 字）、去重（同 text 已存在不重复加）、scope 解析成结构化对象。返回 `{ok,id,scope}`。这全是纯数据操作，可单测。
+
+### 读回（谁能读到什么）
+
+`systemPrompt.section` 注入时按**当前 Agent 的 role** 过滤：
+
+- 前台会话（code-editor 预设）role = `tech-lead`
+- 子Agent 的 role 从 `session-roles.js` 的 MARKS 取（`markOf(sessionId).role`）
+
+过滤规则：`scope.kind==='all'` **或** `scope.kind==='role' && role===当前role` **或** `scope.roles.includes(当前role)`。命中的规则按标签分组、拼成一段「## 工作区规则（必守）」注入。取全部（规则不该太多，超 50 条滚动归档到 `rules.archive.json`）。
+
+### 和四层记忆的关系
+
+| 东西 | 位置 | 谁写 | 形态 |
+|---|---|---|---|
+| 工作区**事实**记忆 | `memory/workspace.md` | 结算时自动追加 | 纯文本、尾部注入 |
+| 工作区**规则** | `memory/rules.json` | **Agent 主动 + 用户口述触发** | 结构化、按 role 过滤注入 |
+| 会话记忆 | `sessions/<sid>/memory.md` | 本会话追加 | 纯文本 |
+| 子Agent/region 记忆 | `sessions/<sid>/{agents,regions}/` | 子会话结算追加 | 纯文本 |
+
+一句话：**workspace.md 记「这个项目长什么样」，rules.json 记「在这个项目里该怎么干活、谁必须守」**。
+
 ## 仓库发现与身份匹配（`lib/studio-repo.js`）
 
 发现顺序：
@@ -161,7 +237,9 @@ PR 目的地独立于 issue 来源：
 
 - [ ] `lib/studio-workspace.js`：读写 `.code-studio/index.json` + `sessions/<sid>/session.json`，原子写。
 - [ ] `lib/studio-repo.js`：发现仓库（本体/子目录）、`git remote -v` 收集所有 slug、按 slug 匹配、缺失 clone、解析 issue 归属、算 PR 目的地。
-- [ ] 记忆四层迁到 `.code-studio`（`studio-memory.js` 扩展根路径 + 分层注入；旧 `.codewrite/editor` 只读兼容）。
+- [ ] `lib/studio-rules.js`：读写 `memory/rules.json`、`addRule/listRules/removeRule` 纯函数、`rulesForRole(rules, role)` 过滤、归一化+去重+超限归档。
+- [ ] `code_studio` 工具加 `action:"rule"`（op=add/list/remove，带 scope/tags）。
+- [ ] 记忆四层迁到 `.code-studio`（`studio-memory.js` 扩展根路径 + 分层注入；旧 `.codewrite/editor` 只读兼容）；规则段也在这里注入（按 `markOf` 的 role 过滤）。
 - [ ] `dispatchIssue` 探 git → 非仓库就地改、不做 worktree。
 - [ ] `ensureWatcher` 只在绑了 GitHub 时自动轮询。
 - [ ] `studio-pr.js` 按 `prRepo/prHeadOwner` 拼 `gh pr create`。
