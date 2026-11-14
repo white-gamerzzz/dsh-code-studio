@@ -120,6 +120,41 @@ content-type: application/json
 - 校验：非 POST→405；body 非 JSON→400；缺 id 且无 fallback 时会补一个。
 - 鉴权：若 host 的 `connection` 服务提供了 `requestRejection`，会先过它（浏览器来源的 CSRF 保护）；没有就靠本机回环地址。
 
+### 工作区状态目录 `.code-studio`（索引 + 记忆 + 规则）
+
+工作区根下另有一个 `.code-studio/`，只放**索引 + 记忆 + 规则**，不放代码、也不重复仓库工作状态（issue/region 台账仍在各仓库的 `<repo>/.codewrite/`）。
+
+```
+<工作区根>/.code-studio/
+  index.json                     总账：仓库清单 + 各会话绑定
+  sessions/<sid>/session.json    单会话：绑了哪个仓库 / PR 目的地 / 状态目录
+  sessions/<sid>/memory.md       本会话记忆（只这个会话读）
+  sessions/<sid>/agents/<childId>.md   子 Agent 记忆（冷恢复用）
+  sessions/<sid>/regions/<slug>.md     某 region 再派单时的记忆
+  memory/workspace.md            工作区级记忆（所有会话共享）
+  memory/rules.json              工作区规则（可按角色过滤）
+  repos/<owner>__<repo>/         需要插件代为 clone 时才用
+```
+
+- **记忆按会话隔离**：除 `memory/workspace.md` 外，所有记忆都在 `sessions/<sid>/` 下，同一工作区的不同会话/子 Agent 不会串记忆。
+- **工作区规则**：用户口头提醒技术总监「以后别这样」时，总监用 `code_studio` 的 `rule` action 记下来，全 Agent / 指定角色 / 本会话 三种适用范围：
+
+```
+code_studio { action:"rule", op:"add", text:"跑测试前先 pnpm install", scope:"all" }
+code_studio { action:"rule", op:"add", text:"审校只看契约不看风格", scope:"reviewer,security" }
+code_studio { action:"rule", op:"list" }        // 看当前规则
+```
+  规则存 `memory/rules.json`（≤200 字/条、同文去重、超 50 条滚动归档），派单时按子 Agent 角色自动拼进 prompt，前台会话按 `tech-lead` 注入。只跟某个会话有关、换项目就不成立的，走会话记忆（`scope:"session"`）；跟角色绑死的固有纪律写进 `presets/code-editor/roles/<role>.md`。
+
+### 多仓库工作区（一个工作区里有多个 git 仓库）
+
+一个工作区（如 `G:\bot-home`）下可能有多个仓库（`G:\bot-home\astrbot-self`、`G:\bot-home\other`）。插件不再假设「工作区 = 一个仓库」：
+
+- `code_studio { action:"repos" }` 列出工作区里发现的 git 仓库（有 `.git` 的子目录）。
+- 派单时按 `issue.repo`（`owner/repo` 或目录名）或 `folders` 首段自动归属到某个子仓库；归属不到的留在工作区根。
+- **PR fork 自动识别**：`git remote -v` 里同时有 `origin`（你的 fork）和 `upstream`（原仓库）时，PR 自动提上游、`--head` 用 origin 的 owner；也可用 `prRepo` / `prHeadOwner` 显式覆盖。
+- 非 git 目录也能派单（跳过 worktree、就地改）；只有「建 PR」要求目录是 git 仓库。
+
 ## 硬限制（code-guard）
 
 挂在 `presets/code-editor/agent.cordis.yml` 的预设子插件，只对使用本预设的总监会话生效：
