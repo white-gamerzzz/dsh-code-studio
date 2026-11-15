@@ -146,6 +146,10 @@ code_studio { action:"rule", op:"list" }        // 看当前规则
 ```
   规则存 `memory/rules.json`（≤200 字/条、同文去重、超 50 条滚动归档），派单时按子 Agent 角色自动拼进 prompt，前台会话按 `tech-lead` 注入。只跟某个会话有关、换项目就不成立的，走会话记忆（`scope:"session"`）；跟角色绑死的固有纪律写进 `presets/code-editor/roles/<role>.md`。
 
+- **自动创建**：不必手动建 `.code-studio`。以下任一操作会自动在**工作区根（会话 cwd）**建好骨架：
+  打开工作室面板（`/code-studio-watch init`）· `code_studio submit|dispatch` 派单 · `code_studio action:"rule" op:"add"` 写规则 · `/code-studio-watch on` 开监听 · 绑 GitHub 源。
+  纯读账（`issues` / `regions` / `repos` / `code_check` / `code_dispatch`）**不会**创建。要关掉自动创建：在 `cordis.patch.yml` 的 `code-studio` 条目里写 `config: { autoCreate: false }`；也可随时 `/code-studio-watch init` 手动建。
+
 ### 多仓库工作区（一个工作区里有多个 git 仓库）
 
 一个工作区（如 `G:\bot-home`）下可能有多个仓库（`G:\bot-home\astrbot-self`、`G:\bot-home\other`）。插件不再假设「工作区 = 一个仓库」：

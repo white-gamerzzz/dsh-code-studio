@@ -111,3 +111,9 @@
 - 逐字节核验：`lib/index.js`、`lib/client.js`、`README.md`、`TODO.md`、`ARCHITECTURE.md`、所有 lib/*.js 均 **U+FFFD=0、无 mojibake**。此前的「乱码」是 PowerShell `Get-Content` 把 UTF-8 当 GBK 显示的假象。
 - 仅 `pozhang/assets/codex-skills-v4/.../burpsuite-mcp-guide.md`（第三方 vendored 附件）确有 GBK 双重编码，且为不可逆的部分损坏；它不属于插件源码、不影响运行，保留原样（要重下上游即可）。
 
+## ✅ 自动创建 `.code-studio`
+- 触发点（任一）：打开工作室面板（`/code-studio-watch init`）· `code_studio submit|dispatch` · `code_studio action=rule op=add` · `/code-studio-watch on` · 绑 GitHub 源。
+- 纯读账（`issues`/`regions`/`repos`/`code_check`/`code_dispatch`）不建。
+- 建在**工作区根（会话 cwd）**一处；`ensureStudio(wsRoot,agent,patch)` 幂等（`ensureWorkspaceDir` + `upsertRepo`×N + `upsertSession`），全程 try/catch 静默，建目录失败不影响主流程。
+- 开关：`apply(ctx,{autoCreate:false})`（`cordis.patch.yml` 里 `config: {autoCreate:false}`）可关；面板打开时客户端每会话请求一次 `/code-studio-watch init`。
+
