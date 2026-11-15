@@ -98,10 +98,11 @@ html[data-theme=dark] body{
 .chip .nm{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:170px}
 .chip.sm{font-size:10.5px;padding:2px 8px;cursor:default}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
-.grid{display:grid;grid-template-columns:minmax(230px,296px) minmax(0,1fr);gap:14px;flex:1;min-height:0;margin:6px 20px 18px;background:transparent;overflow:hidden}
-.col{display:flex;flex-direction:column;min-height:0;padding:4px 0;gap:12px}
-.col.left{min-width:0}
-.col.right{min-width:0}
+/* 两栏整体悬空：一块统一的圆角面板（左右不分家），四边留等距，靠内部滚动 */
+.grid{display:grid;grid-template-columns:minmax(230px,296px) minmax(0,1fr);gap:0;flex:1;min-height:0;margin:14px 16px;background:transparent;overflow:hidden}
+.col{display:flex;flex-direction:column;min-height:0;padding:16px 18px;gap:12px;overflow:hidden}
+.col.left{border-right:.5px solid var(--line-soft)}
+.col.left,.col.right{min-width:0;background:transparent;border-radius:0;box-shadow:none;backdrop-filter:none;-webkit-backdrop-filter:none}
 /* —— 左栏顶部搜索框（NapCat 式） —— */
 .search{display:flex;align-items:center;gap:7px;padding:7px 11px;border-radius:11px;background:var(--card-2);border:.5px solid var(--line-soft);flex:none}
 .search .sico{font-size:12px;color:var(--muted);flex:none}
@@ -182,7 +183,7 @@ html[data-theme=dark] body{
 .nlabel{font-size:10.5px;font-weight:650;fill:var(--text)}
 .nsub{font-size:9.5px;fill:var(--muted)}
 .report{flex:1;min-height:0;overflow:auto;display:flex;flex-direction:column;gap:10px;
-  background:var(--card-2);border:.5px solid var(--line-soft);border-radius:16px;padding:16px 18px}
+  background:transparent;border:0;border-radius:0;padding:0}
 .report.empty{align-items:center;justify-content:center;color:var(--muted);font-size:12px}
 .report .meta{display:flex;gap:6px;flex-wrap:wrap}
 .report .body{font-size:12.5px;line-height:1.82;white-space:pre-wrap;word-break:break-word;color:var(--text);

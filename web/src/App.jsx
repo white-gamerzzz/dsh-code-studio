@@ -67,12 +67,12 @@ function applyTheme(t) {
   const pbg = t.panelColor
     ? 'rgba(' + hexToRgb(t.panelColor).join(',') + ',' + (t.panelOpacity / 100).toFixed(2) + ')'
     : 'color-mix(in srgb,var(--card) ' + t.panelOpacity + '%,transparent)';
-  document.querySelectorAll('.col.left,.col.right').forEach((n) => n.style.setProperty('background', pbg, 'important'));
+  document.querySelectorAll('.grid').forEach((n) => n.style.setProperty('background', pbg, 'important'));
   document.body.classList.toggle('glass-on', !!t.glass);
   const pgf = 'blur(' + (t.glass ? t.blur : 24) + 'px) saturate(' + (t.glass ? t.saturation : 160) + '%)';
-  document.querySelectorAll('.col.left,.col.right').forEach((n) => { n.style.backdropFilter = pgf; n.style.webkitBackdropFilter = pgf; });
+  document.querySelectorAll('.grid').forEach((n) => { n.style.backdropFilter = pgf; n.style.webkitBackdropFilter = pgf; });
   const gf = t.glass ? 'blur(' + t.blur + 'px) saturate(' + t.saturation + '%)' : '';
-  document.querySelectorAll('.src,.tcard,.card,.report .body,.graph,.mcard').forEach((n) => { n.style.backdropFilter = gf; n.style.webkitBackdropFilter = gf; });
+  document.querySelectorAll('.src,.tcard,.card,.report,.graph,.mcard').forEach((n) => { n.style.backdropFilter = gf; n.style.webkitBackdropFilter = gf; });
 }
 
 // ---- 工作状态图 ----
