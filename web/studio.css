@@ -1,5 +1,4 @@
-@import "tailwindcss";
-
+@import "@heroui/styles";
 /* Tailwind v4 主题：NapCat heroUI token 映射成 Tailwind 变量，utility 与组件类共用一套值 */
 @theme {
   --color-bg: #181819;
