@@ -58,7 +58,8 @@
     "presets",
     "pozhang",
     "cordis.patch.yml",
-    "README.md"
+    "README.md",
+    "web"
   ],
   "license": "MIT",
   "keywords": [
@@ -105,6 +106,12 @@
     "relay:switch": "node pozhang/route-switch.mjs",
     "relay:e2e": "node pozhang/relay-e2e.mjs",
     "chain:e2e": "node pozhang/chain-e2e.mjs",
-    "chain:verify": "node pozhang/chain-verify.mjs"
+    "chain:verify": "node pozhang/chain-verify.mjs",
+    "build:css": "tailwindcss -i web/studio.css -o lib/studio-web.css --minify",
+    "dev:css": "tailwindcss -i web/studio.css -o lib/studio-web.css --watch"
+  },
+  "devDependencies": {
+    "@tailwindcss/cli": "^4.3.5",
+    "tailwindcss": "^4.3.5"
   }
 }
