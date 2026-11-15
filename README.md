@@ -159,6 +159,12 @@ code_studio { action:"rule", op:"list" }        // 看当前规则
 - **PR fork 自动识别**：`git remote -v` 里同时有 `origin`（你的 fork）和 `upstream`（原仓库）时，PR 自动提上游、`--head` 用 origin 的 owner；也可用 `prRepo` / `prHeadOwner` 显式覆盖。
 - 非 git 目录也能派单（跳过 worktree、就地改）；只有「建 PR」要求目录是 git 仓库。
 
+### 会话级 GitHub 源 + 快速换会话继承
+
+- **GitHub 源跟会话走，台账跟仓库走**：`/code-studio-watch github owner/repo`、`token <pat>` 现在写进 `sessions/<sid>/github.json` 与 `sessions/<sid>/github-token`（不再写工作区共享的 `.codewrite/github.json`）。同一工作区不同会话可各绑各的仓库/PAT，互不干扰。会话目录没有配置时回退读旧 `<workspace>/.codewrite/github.json`，老工作区免迁移。
+- **快速换会话、继承记忆与绑定**：面板顶部「新建会话并继承」按钮（或命令 `/code-studio-watch inherit <newSid> [fromSid]`）会新建一个**干净会话**，然后用 `inheritFrom` 指针把它的记忆/规则/GitHub 源/PAT **指向**旧会话目录 —— **不复制任何文件**，只新建一条会话记录。
+- **一份记忆只给一个可写会话**：一旦继承，旧会话自动标 `readonly`（只读不写），新会话可读可写。这样同一份会话记忆不会被两个会话同时写乱。取消继承：`/code-studio-watch unlink`（或直接删 `index.json` 里那条 `inheritFrom`）。
+
 ## 硬限制（code-guard）
 
 挂在 `presets/code-editor/agent.cordis.yml` 的预设子插件，只对使用本预设的总监会话生效：
