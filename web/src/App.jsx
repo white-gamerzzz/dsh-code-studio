@@ -245,7 +245,11 @@ export default function App({ boot }) {
   return (
     <div className={'app' + (sideCollapsed ? ' side-collapsed' : '')}>
       <aside className="rail">
-        <div className="brand" title="代码总编工作室"><span className="bico" /></div>
+        <div className="brand" title="代码总编工作室">
+          <svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="#fff" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M8.5 7.5 4.5 12l4 4.5M15.5 7.5 19.5 12l-4 4.5" />
+          </svg>
+        </div>
         <nav className="railnav">
           {RAIL.map((r) => (
             <Tooltip key={r.id} content={r.title}>
