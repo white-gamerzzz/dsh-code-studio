@@ -50,7 +50,8 @@
     },
     "./package.json": "./package.json",
     "./lib/studio-repo": "./lib/studio-repo.js",
-  "./lib/studio-web": "./lib/studio-web.js"
+    "./lib/studio-web": "./lib/studio-web.js",
+    "./lib/studio-theme": "./lib/studio-theme.js"
   },
   "files": [
     "lib",
