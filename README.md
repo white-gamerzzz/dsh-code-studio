@@ -43,7 +43,7 @@
    —— 轮询器下一轮（默认 60s）把它变成 issue 并派单。folders 可省略，会从 body 里的路径自动抽。
 3. **持久子会话按 region 复用**：同一片文件夹的后续 issue 追回同一个子会话串行追加，换片才新建；
    在飞的 region 分组 ≤ 2，子会话不得再派 `tech-lead`。
-4. 子会话结算时，报告回写 `issues.json`。**右侧栏「工作室」页**同屏呈现 issue 列表 / 工作状态图 / 报告，左侧照常是会话区。
+4. 子会话结算时，报告回写 `issues.json`（现在统一放在工作区的 `<ws>/.code-studio/issues.json`）。**右侧栏「工作室」页**是三栏：左栏区域目录（点区域即筛下面的 issue 列表）/ 中栏该区域的 issue 列表 / 右栏工作状态图 + 报告，再右边照常是会话区。
 
 **打开方式**：点会话右侧栏底部的 `</>` 启动器，打开「工作室」右侧栏页（`sidebar.footer.action` → `sidebarRight.openTab('code-studio')`）。
 中间那块是**工作状态图（节点连线图）**：`工作区 → region → issue` 三层节点用连线连起来，直接看哪个 region / 子 Agent 在跑（RUNNING 的 region 和 issue 会黄色高亮脉冲），点 issue 节点切换右侧报告。点「建 PR」对 `DONE` 的 issue 走 gh 建 PR（见下）。
@@ -72,7 +72,7 @@ code_studio { action: "submit", id: "12", title: "修登录", body: "改 src/aut
 
 底层走 `remote.agentPresets.select(sessionId, 'code-editor')`，没有全局副作用，只作用于当前会话。
 
-监听配置：`/code-studio-watch on|off|scan|interval <ms>`，或 `code_studio` 的 `watch` action。仓库根出现 `.codewrite/`：`issues.json`、`regions.json`、`watch.json`、`inbox/`、`editor/`（工作区记忆）——均为运行产物，建议进 `.gitignore`。
+监听配置：`/code-studio-watch on|off|scan|interval <ms>`，或 `code_studio` 的 `watch` action。台账 `issues.json`/`regions.json` 统一落在**工作区根的 `<ws>/.code-studio/`**（不再散在各仓库 `.codewrite/`）；`watch.json`/`inbox/` 仍在 `<repo>/.codewrite/`。均为运行产物，建议进 `.gitignore`。
 
 ### 建 PR（走本机 gh CLI，插件不留 key）
 
@@ -122,12 +122,16 @@ content-type: application/json
 
 ### 工作区状态目录 `.code-studio`（索引 + 记忆 + 规则）
 
-工作区根下另有一个 `.code-studio/`，只放**索引 + 记忆 + 规则**，不放代码、也不重复仓库工作状态（issue/region 台账仍在各仓库的 `<repo>/.codewrite/`）。
+工作区根下的 `.code-studio/` 放**索引 + 记忆 + 规则 + 工作台账**（`issues.json`/`regions.json` 也在这里，一个工作区的状态集中一处，不东一堆西一堆），不放代码。
 
 ```
 <工作区根>/.code-studio/
   index.json                     总账：仓库清单 + 各会话绑定
+  issues.json                    所有 issue 的台账（选择区域后按 region 过滤展示）
+  regions.json                   区域台账：每个区域的文件夹 / 子会话 / 工作树 / issue 列表
   sessions/<sid>/session.json    单会话：绑了哪个仓库 / PR 目的地 / 状态目录
+  sessions/<sid>/github.json     本会话绑的 GitHub 源（含 prRepo/prHeadOwner）
+  sessions/<sid>/github-token    本会话 PAT（0600，不进版本库）
   sessions/<sid>/memory.md       本会话记忆（只这个会话读）
   sessions/<sid>/agents/<childId>.md   子 Agent 记忆（冷恢复用）
   sessions/<sid>/regions/<slug>.md     某 region 再派单时的记忆
@@ -135,6 +139,8 @@ content-type: application/json
   memory/rules.json              工作区规则（可按角色过滤）
   repos/<owner>__<repo>/         需要插件代为 clone 时才用
 ```
+
+> 旧版本的 `<repo>/.codewrite/issues.json` / `regions.json` 会被自动兼容读取（新位置为空时回退读旧的），新写入一律走 `.code-studio/`。
 
 - **记忆按会话隔离**：除 `memory/workspace.md` 外，所有记忆都在 `sessions/<sid>/` 下，同一工作区的不同会话/子 Agent 不会串记忆。
 - **工作区规则**：用户口头提醒技术总监「以后别这样」时，总监用 `code_studio` 的 `rule` action 记下来，全 Agent / 指定角色 / 本会话 三种适用范围：
@@ -251,7 +257,7 @@ dsh **设置 → 代码工作室** 一页两块：**破障中继在上、角色�
 
 ## 仓库侧状态
 
-跑起来后仓库根会出现 `.codewrite/`：`agents/`（任务账 registry.json + 事件 .jsonl + orphaned/）、`editor/`（总监记忆 + `regions/` 分区记忆）、`ledger/`（档案交接）、`issues.json`/`regions.json`/`watch.json`/`github.json`/`inbox/`（工作室台账与监听来源）。这是运行产物，建议进 `.gitignore`（本仓库已默认忽略）。
+跑起来后仓库根会出现 `.codewrite/`：`agents/`（任务账 registry.json + 事件 .jsonl + orphaned/）、`editor/`（旧版总监记忆，新装的走 `.code-studio/`）、`ledger/`（档案交接）、`watch.json`/`inbox/`（监听来源）；而 `issues.json`/`regions.json` 已迁到工作区根的 `.code-studio/`。都是运行产物，建议进 `.gitignore`（本仓库已默认忽略）。
 
 ## 许可
 
