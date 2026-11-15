@@ -17,3 +17,6 @@ Thumbs.db
 # 涓存椂鏂囦欢
 *.tmp
 *.bak
+
+# 前端构建中间产物（由 scripts/mkappcss.cjs 从 web/studio.css 生成）
+web/src/app.css
