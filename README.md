@@ -175,7 +175,9 @@ code_studio { action:"rule", op:"list" }        // 看当前规则
 
 ### 面板外观（悬浮卡片 / 自定义背景 / 玻璃 / 折叠侧栏 / 监控条）
 
-工作室内置网页右上角 **「⚙ 外观」** 打开一张可拖拽的悬浮卡片（拖标题栏移动，`✕` 关闭），改动即时生效并写进 `<工作区>/.code-studio/theme.json`：
+工作室内置网页是 **React + heroUI** 写的（源码在 `web/`，`npm run build:web` 用 Vite 打包到 `lib/web-dist/`，产物无 hash：`studio.js` / `studio.css`）。配色与卡片材质直接抄 NapCat WebUI 的 heroUI 深色 token（`--bg:#181819`、`--card:#26262b`、`--accent:#3b82f6`、圆角 16px、`backdrop-blur` 24px），改样式只改 `web/studio.css` 再 build。
+
+右上角 **「⚙ 外观」** 打开一张可拖拽的悬浮卡片（拖标题栏移动，`✕` 关闭），改动即时生效并写进 `<工作区>/.code-studio/theme.json`：
 
 - **强调色**：7 个预设色板（默认蓝 / NapCat 青 / 霓虹紫 / 森绿 / 琥珀 / 海洋 / 玫瑰）或取色器任选；自动派生 `-weak`（15% 透明底）与 `-line`（45% 描边），换任何颜色都不会把字配色到看不见。
 - **背景**：三选 —— 跟随主题 / 纯色（任意 HEX）/ 图片。图片只接受 `http(s)://` 或 `data:image/`（其它协议直接丢弃，防 `javascript:` 注入），铺在整页并自动叠一层暗色蒙版保证可读。
