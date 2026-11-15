@@ -125,9 +125,7 @@ function GraphSvg({ boxRef, issues, regions }) {
 }
 
 const RAIL = [
-  { id: 'rRegion', icon: '▤', title: '区域列表', nav: true },
-  { id: 'rStatus', icon: '◔', title: '工作状态', nav: true },
-  { id: 'rReport', icon: '▦', title: '报告', nav: true },
+  { id: 'rRegion', icon: '▤', title: '折叠 / 展开左栏', nav: true },
 ];
 const RAIL_BOT = [
   { id: 'rSrc', icon: '⇄', title: '数据源' },
@@ -228,14 +226,11 @@ export default function App({ boot }) {
 
   const selIssue = issues.find((i) => String(i.id) === sel);
 
-  const scrollTo = (id) => { const n = document.getElementById(id); if (n) n.scrollIntoView({ behavior: 'smooth', block: 'center' }); };
   const railClick = (id) => {
     if (id === 'rRegion') { setSideCollapsed((v) => !v); return; }
     if (id === 'rSrc') { setSrcOpen((v) => !v); return; }
     if (id === 'rTheme') { setCardOpen((v) => !v); return; }
     if (id === 'rRefresh') { act('scan'); return; }
-    if (id === 'rStatus') { scrollTo('graph'); return; }
-    if (id === 'rReport') { scrollTo('report'); return; }
   };
   const railOn = (id) => (id === 'rRegion' ? !sideCollapsed : id === 'rSrc' ? srcOpen : false);
 
