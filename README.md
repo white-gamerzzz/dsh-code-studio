@@ -214,21 +214,27 @@ presets/code-editor/
 
 `task-registry.js` / `orchestrator.js` / `dispatch.js` / `session-roles.js` 四份从 novel 插件逐字搬来，只改了状态目录前缀（`.codewrite/`）与工具名（`code_dispatch`）。不为一个常量复制整份模块，也不重造已有的编排逻辑。
 
-## 破甲内置层（pozhang/）
+## 破障子系统（已拆为独立包）
 
-插件**自带破甲**，装上重启 dsh 即生效，无需另开注入程序：
+> **破障（pozhang）已拆到独立包 `@whitegamerzzz/dsh-plugin-pozhang`**，其 patch 由该包自带；本仓库不再内置 `pozhang/` 与 `lib/pozhang-settings.js`。
+>
+> 工作室对破障是**可选加载**：未安装破障时宿主 `import` 仍 EXIT 0，各符号静默降级（`/hz` 报「破障插件未安装」），装上即恢复全部功能。安装/使用/降级说明见新包 README。
+>
+> 以下为本仓库原先内置时的能力描述，作为破障功能参考保留。
+
+破障装上重启 dsh 即生效，无需另开注入程序：
 
 - 启动时在 `apply()` 里幂等写入 `~/.dsh/AGENTS.md` 的标记块（内容一致则跳过，不重装技能）
 - 同时把技能库装到 `~/.dsh/skills/`（与破障桌面版同一套 `codex-skills-v4`）
 - 插件进程活着 = 守护活着：每 30s 校验标记块，被编辑/覆盖自动补回
-- **子 Agent 同样覆盖**：dsh 是否把 AGENTS.md 传给子会话是运行时行为，不能假设——派单时把破甲正文**显式前置**到子会话初始 prompt（三条派单路径全部覆盖：`code_dispatch` 常驻/一次性、`code_studio dispatch`、收件/GitHub 监听自动派单）；追回已有子会话时补一句锚点，防上下文压缩后约束漂移
+- **子 Agent 同样覆盖**：dsh 是否把 AGENTS.md 传给子会话是运行时行为，不能假设——派单时把破障正文**显式前置**到子会话初始 prompt（三条派单路径全部覆盖：`code_dispatch` 常驻/一次性、`code_studio dispatch`、收件/GitHub 监听自动派单）；追回已有子会话时补一句锚点，防上下文压缩后约束漂移
 - **压缩三层防御**（`dsh-compaction` 摘要会把早期消息吃掉，头部注入最先受损）：
   1. 正文末尾带**自愈条款**——约定不可见时模型自行读取 `~/.dsh/AGENTS.md` 恢复，不依赖运行时事件
   2. **压缩守望**：每 20s 检查已登记子会话的会话日志，日志缩水 >35% 判定为压缩，给该子会话追发锚点（5 分钟冷却，`subagents.sendMessage`）
   3. 追回既有子会话时每次都带锚点，保证"最近一条消息"里始终有约束（压缩摘要优先保留近期消息）
 - **身份不被压缩吃掉**：压缩最先吃掉会话开头（角色卡所在处），所以每次派单/追发都在消息**末尾**追加角色感知锚点：`你当前的角色是 <role>；角色卡若已不可见，先调用 code_roles 取回`。锚点落在压缩的"最近消息"保护窗口内
 - **不碰任何其它插件**：不使用 dsh-prompt-inject 之类的第三方配置通道；状态只落在 `~/.dsh/AGENTS.md` 的标记块、`~/.dsh/.pozhang-state.json` 与本插件目录内
-- 资源全部内置：`pozhang/assets/破障v4.md`（提示词正文）、`pozhang/assets/codex-skills-v4/`
+- 资源随新包打包：`@whitegamerzzz/dsh-plugin-pozhang` 内的 `pozhang/assets/破障v4.md`（提示词正文）、`pozhang/assets/codex-skills-v4/`
 
 ```bash
 /hz              # 查看状态（注入是否最新、字符数、技能数）
@@ -266,7 +272,7 @@ dsh **设置 → 代码工作室** 一页两块：**破障中继在上、角色�
 
 命令行等价操作：`/hz relay on [端口] [上游]`、`/hz relay off`、`/hz relay`（看状态）。
 
-改提示词只改 `pozhang/assets/破障v4.md`（或 `pozhang/index.js` 的 `DEFAULT_PROMPT`），重启 dsh 后下次启动自动升级。卸载/升级不会动用户自己在 `AGENTS.md` 里写的其它内容。
+改提示词只改新包内的 `pozhang/assets/破障v4.md`（或 `pozhang/index.js` 的 `DEFAULT_PROMPT`），重启 dsh 后下次启动自动升级。卸载/升级不会动用户自己在 `AGENTS.md` 里写的其它内容。
 
 > 生效时机：AGENTS.md 只在**会话启动时**读取，注入完成后需重启 dsh 或开新会话。
 
