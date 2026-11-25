@@ -200,7 +200,7 @@ code_studio { action:"rule", op:"list" }        // 看当前规则
 ## 目录
 
 ```
-lib/          index.js(注册) code-guard.js dispatch.js orchestrator.js task-registry.js
+lib/          index.js(注册) code-guard.js dispatch.js executor.js ops.js orchestrator.js task-registry.js
               session-roles.js packet.js runner.js agent-models.js
               studio-store.js studio-memory.js studio-dispatch.js studio-watch.js
               studio-github.js studio-pr.js studio-intake.js studio-route.js
@@ -209,6 +209,48 @@ presets/code-editor/
 ```
 
 每个 `studio-*.js` 都是可独立自测的纯逻辑模块（`node lib/studio-store.js` 等自带 demo）。
+
+### 操作表（`lib/ops.js`）
+
+派单、合并、中止这些能力只在一处定义，工具层与 HTTP 层都是它的薄适配器：
+
+```js
+OPS = [{ name, summary, params: [...], required: [...] }, ...]   // 14 个 op，唯一真相源
+canonicalOp(name)      // 别名归一：submit -> dispatch, status -> mergeStatus
+opSchema(name)         // 单个 op 的 JSON Schema
+unionSchema(names)     // 一个工具承载多个 op 时用（code_studio / code_merge 的 parameters 由它生成）
+genericSchema()        // code_op 与 HTTP 外部调用共用
+createOpRegistry()     // register / run：查实现、校验必填、兜异常，返回 { ok, text, data? }
+```
+
+三个入口调的是同一份实现：
+
+| 入口 | 形态 |
+|------|------|
+| `code_op` 工具 | `{ op: 'merge', id: '12' }` —— 14 个 op 都能走这一条 |
+| 具名工具 | `code_studio`（10 个 action）、`code_merge`（4 个），参数表由 `unionSchema` 生成 |
+| HTTP `POST <动作路由>` | `{ "op": "run", "name": "merge", "args": { "id": "12" } }` —— 外部 CLI Agent 用这个 |
+
+`rule` 的子操作字段叫 `ruleOp`（`op` 已被操作名占用），旧的 `op` 仍兼容。
+
+### 执行器接口（`lib/executor.js`）
+
+派单与结算不绑宿主。`dispatchIssue` 只认执行器的四个方法，`handleChildEnd` 只吃中立的结束信息：
+
+```js
+start({ childId, label, prompt, cwd, route, signal }) -> { childId }
+send({ childId, text, signal })
+list({ signal }) -> [{ id }]
+isLive(childId) -> boolean
+onEnd(handler) -> unsubscribe          // 要结算就必须有
+```
+
+- `makeDshExecutor({ subagents, agents, parent })`：DSH 子 Agent。结束事件由 `ctx.on('subagent/end')` 喂给 `handleChildEnd`。
+- `makeCliExecutor({ command, args })`：本机任意 CLI（claude / codex / 自写脚本），prompt 走 stdin、stdout 当报告、退出码当成败。
+
+插件配置里给 `executor: { command: 'claude', args: ['-p'] }` 就整条切到 CLI 执行器（结束事件改由子进程退出喂），不给仍是 DSH 子 Agent。
+
+换执行器不影响 region / issue / 副本 / 待合并区那一整套流程。
 
 ## 复用说明（ponytail）
 

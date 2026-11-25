@@ -22,6 +22,7 @@ async function api(path, body) {
 }
 
 const tagOf = (s) => (s === 'DONE' ? 'done'
+  : s === 'REVIEW' ? 'review'
   : (s === 'FAILED' || s === 'BLOCKED' || s === 'CANCELLED') ? 'fail'
   : (s === 'RUNNING' || s === 'READY') ? 'run' : '');
 
@@ -142,6 +143,8 @@ export default function App({ boot }) {
   const [srcOpen, setSrcOpen] = useState(false);
   const [cardOpen, setCardOpen] = useState(false);
   const [toastMsg, setToastMsg] = useState(null);
+  const [loadErr, setLoadErr] = useState(null);
+  const lastErrRef = useRef(null);
   const [theme, setTheme] = useState(() => {
     const b = (boot && boot.theme) || {};
     const out = {}; for (const k of THEME_FIELDS) out[k] = b[k];
@@ -172,8 +175,8 @@ export default function App({ boot }) {
   }, []);
 
   const load = useCallback(async () => {
-    try { setSnap(await api('/code-studio/api/state')); }
-    catch (e) { toast('读取失败：' + e.message, true); }
+    try { setSnap(await api('/code-studio/api/state')); setLoadErr(null); }
+    catch (e) { const m = String((e && e.message) || e); setLoadErr(m); if (m !== lastErrRef.current) toast('读取失败：' + m, true); lastErrRef.current = m; }
   }, [toast]);
 
   useEffect(() => {
@@ -219,6 +222,7 @@ export default function App({ boot }) {
   }, [issues, regions, q]);
 
   const cRun = issues.filter((i) => i.status === 'RUNNING').length;
+  const cReview = issues.filter((i) => i.status === 'REVIEW').length;
   const cDone = issues.filter((i) => i.status === 'DONE').length;
   const cFail = issues.filter((i) => ['FAILED', 'BLOCKED', 'CANCELLED'].includes(i.status)).length;
   const cQueue = issues.filter((i) => !i.status || i.status === 'READY' || i.status === 'PENDING').length;
@@ -276,6 +280,8 @@ export default function App({ boot }) {
             <Chip size="sm" variant="flat" className="pill">{issues.length + ' 个 issue'}</Chip>
           </div>
         </header>
+
+        {loadErr && <div className="errbanner">读取失败：{loadErr}</div>}
 
         {srcOpen && (
           <section className="src" id="srcbar">
@@ -342,15 +348,16 @@ export default function App({ boot }) {
 
           <section className="col right">
             <section className="mon">
-              <Mc b={cRun} label="进行中" /><Mc b={cQueue} label="待派" /><Mc b={cDone} label="已完成" />
+              <Mc b={cRun} label="进行中" /><Mc b={cReview} label="待合并" /><Mc b={cQueue} label="待派" /><Mc b={cDone} label="已完成" />
               <Mc b={cFail} label="异常" /><Mc b={Object.keys(regions).length} label="区域" /><Mc b={srcName} label="数据源" />
             </section>
             <div className="secttl">工作状态
-              <span className="legend"><i className="d" />完成 <i className="r" />进行 <i className="f" />失败</span>
+              <span className="legend"><i className="d" />完成 <i className="v" />待合并 <i className="r" />进行 <i className="f" />失败</span>
             </div>
             <Graph issues={issues} regions={regions} />
             <div className="secttl">报告
               <span className="acts">
+                <Button size="sm" color="success" isDisabled={!(selIssue && selIssue.status === 'REVIEW')} onPress={() => sel && act('merge', { id: sel })}>合并</Button>
                 <Button size="sm" color="primary" isDisabled={!(selIssue && selIssue.status === 'DONE')} onPress={() => sel && act('pr', { id: sel })}>建 PR</Button>
                 <Button size="sm" variant="flat" isDisabled={!(selIssue && selIssue.status === 'RUNNING')} onPress={() => sel && act('cancel', { id: sel })}>中止</Button>
               </span>
