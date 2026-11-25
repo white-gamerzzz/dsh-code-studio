@@ -4,5 +4,3 @@
 - insert:
     - id: code-studio
       name: 'dsh-plugin-code-studio'
-    - id: code-studio-agent-models
-      name: 'dsh-plugin-code-studio/agent-models'

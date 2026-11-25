@@ -2,10 +2,10 @@
   "name": "dsh-plugin-code-studio",
   "version": "0.2.0",
   "private": true,
-  "description": "代码总编工作室：技术总监不写代码，只输出工作流并派单给 7 个角色子 Agent；每张单过 code_task 账、有 write_scope 文件 glob、过机器门 code_check 与独立审校两道门。",
+  "description": "代码工作室：子 Agent 团队的协调工具——issue 台账、git worktree 副本、结算回写、合并闸门；插件不派子 Agent，主 Agent 自己组织团队。",
   "meta": {
-    "title": "代码总编工作室",
-    "description": "把代码生产的质量控制从主观判断变成可计算流程：角色分工、任务账本、写入范围硬限制、机器门 + 独立审校。"
+    "title": "代码工作室",
+    "description": "把代码生产的质量控制从主观判断变成可计算流程：台账、副本隔离、漂移检查、独立审校。"
   },
   "type": "module",
   "main": "lib/index.js",
@@ -13,15 +13,10 @@
     ".": {
       "default": "./lib/index.js"
     },
-    "./agent-models": {
-      "default": "./lib/agent-models.js"
-    },
     "./code-guard": {
       "default": "./lib/code-guard.js"
     },
     "./client": "./lib/client.js",
-    "./lib/task-registry": "./lib/task-registry.js",
-    "./lib/orchestrator": "./lib/orchestrator.js",
     "./lib/session-roles": "./lib/session-roles.js",
     "./lib/dispatch": "./lib/dispatch.js",
     "./lib/executor": "./lib/executor.js",
@@ -30,12 +25,10 @@
     "./lib/kb": "./lib/kb.js",
     "./lib/map": "./lib/map.js",
     "./lib/review": "./lib/review.js",
-    "./lib/eval": "./lib/eval.js",
     "./lib/embedder": "./lib/embedder.js",
     "./lib/studio-store": "./lib/studio-store.js",
     "./lib/studio-memory": "./lib/studio-memory.js",
     "./lib/studio-dispatch": "./lib/studio-dispatch.js",
-    "./lib/studio-shadow": "./lib/studio-shadow.js",
     "./lib/studio-memory-index": "./lib/studio-memory-index.js",
     "./lib/studio-watch": "./lib/studio-watch.js",
     "./lib/studio-github": "./lib/studio-github.js",
