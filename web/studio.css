@@ -14,45 +14,45 @@
 
 /* ---- 以下为组件级样式（手写，非 utility） ---- */
 *{box-sizing:border-box}
+/* 令牌化：优先消费宿主 DSH 的 dsw alias（跟 BotHarness 面板同一套），fallback 是现在的值 ——
+   嵌在 DSH 里自动随宿主主题翻色，独立打开也不裸奔。 */
 :root{
-  --bg:#f4f5f8;--panel:#eceef3;--card:#fff;--card-2:#f7f8fb;--line:#e3e6ec;--line-soft:#eef0f4;
-  --text:#0f172a;--muted:#64748b;
-  --accent:#3b82f6;--accent-weak:#eaeefe;--accent-line:rgba(59,130,246,.35);
-  --done:#16a34a;--run:#d97706;--fail:#dc2626;--review:#3b82f6;
+  --bg:#f4f5f8;--panel:var(--dsw-alias-bg-card,#eceef3);--card:#fff;--card-2:var(--dsw-alias-interactive-bg-hover,rgba(38,49,72,.055));
+  --line:var(--dsw-alias-border-hairline,rgba(15,17,21,.08));--line-soft:rgba(15,17,21,.045);
+  --text:var(--dsw-alias-text-primary,#0f172a);--muted:var(--dsw-alias-label-secondary,#64748b);
+  --accent:var(--dsw-alias-state-business-primary,#3b82f6);--accent-weak:color-mix(in srgb,var(--accent) 9%,transparent);--accent-line:color-mix(in srgb,var(--accent) 35%,transparent);
+  --done:var(--dsw-alias-state-success-primary,#16a34a);--run:var(--dsw-alias-state-warn-primary,#d97706);--fail:var(--dsw-alias-state-error-primary,#dc2626);--review:var(--accent);
   --radius:12px;
-  --shadow:0 1px 2px rgba(16,24,40,.06),0 2px 8px rgba(16,24,40,.05);
-  --shadow-lg:0 6px 22px rgba(16,24,40,.10);
+  --shadow:0 0 0 .5px var(--line);            /* BH 风格：描边代替投影 */
+  --shadow-lg:0 8px 24px rgba(15,17,21,.08);
   --glow:0 0 0 1px var(--accent-line);
+  --ease:cubic-bezier(0.23,1,0.32,1);
 }
-/* 深色 token 抄自 NapCat heroUI：content1=240 5.88% 10%(#181819)、content2=240 3.7% 15.88%(#26262b)、
-   default-200=240 5.26% 26.08%(#3f3f46)、divider 白 6.67%、foreground=210 5.56% 92.94%(#ecedf2) */
+/* 深色：宿主 alias 会自己翻色，这里只兜独立打开（data-theme=dark）时的值；
+   底色抄 DSH neutral-bluish 体系（#0F1115 主文字 / #181819 画布） */
 html[data-theme=dark]{
-  --bg:#181819;--panel:#1c1c1f;--card:#26262b;--card-2:#2e2e34;
+  --bg:#181819;--panel:#1c1c1f;--card:#26262b;--card-2:rgba(255,255,255,.05);
   --line:rgba(255,255,255,.10);--line-soft:rgba(255,255,255,.055);
   --text:#ecedf2;--muted:#a1a1aa;
   --accent:#3b82f6;--accent-weak:rgba(59,130,246,.16);--accent-line:rgba(59,130,246,.42);
   --done:#22c55e;--run:#f59e0b;--fail:#ef4444;--review:#60a5fa;
-  --shadow:0 1px 2px rgba(0,0,0,.40),0 4px 14px rgba(0,0,0,.26);
-  --shadow-lg:0 25px 50px -12px rgba(0,0,0,.45);
+  --shadow:0 0 0 .5px rgba(255,255,255,.10);
+  --shadow-lg:0 8px 24px rgba(0,0,0,.35);
 }
 html,body{height:100%}
 body{margin:0;color:var(--text);
-  font:13px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;
+  font:13px/1.55 var(--dsw-font-family-default,-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif);
   -webkit-font-smoothing:antialiased}
 html[data-theme=dark] body{
-  background:
-    radial-gradient(500px 500px at 8% -6%, rgba(191,120,220,.26), transparent 70%),
-    radial-gradient(400px 400px at 104% 18%, rgba(90,180,220,.22), transparent 70%),
-    radial-gradient(600px 600px at 26% 108%, rgba(249,168,212,.16), transparent 70%),
-    linear-gradient(135deg,#111827,#1f2937 52%,#111827);
+  background:var(--bg);   /* 去掉 NapCat 三色光斑，BH 是平面底色 */
 }
 .app{display:flex;flex-direction:row;height:100vh;overflow:hidden;gap:0}
 /* —— 左侧图标窄栏 —— */
 .rail{flex:none;width:66px;display:flex;flex-direction:column;align-items:center;gap:6px;padding:14px 0;
-  background:linear-gradient(180deg,rgba(255,255,255,.04),rgba(255,255,255,0));
+  background:transparent;
   border-right:.5px solid var(--line-soft)}
 .rail .brand{width:36px;height:36px;border-radius:12px;display:flex;align-items:center;justify-content:center;margin-bottom:12px;
-  background:linear-gradient(150deg,var(--accent),color-mix(in srgb,var(--accent) 50%,#12081f));box-shadow:0 6px 20px var(--accent-line)}
+  background:var(--accent);box-shadow:none}
 .rail .brand .bico{width:14px;height:14px;border-radius:4px;background:#fff;box-shadow:0 0 0 3px rgba(255,255,255,.22)}
 .railnav,.railbot{display:flex;flex-direction:column;gap:6px;align-items:center}
 .railbot{margin-top:auto}
@@ -85,8 +85,8 @@ html[data-theme=dark] body{
 .btn:hover:enabled{border-color:var(--accent);color:var(--accent);background:var(--accent-weak)}
 .btn:active:enabled{transform:none}
 .btn:disabled{opacity:.42;cursor:default}
-.btn.primary{background:linear-gradient(180deg,var(--accent),color-mix(in srgb,var(--accent) 82%,#000));border-color:transparent;color:#fff;box-shadow:0 6px 18px var(--accent-line)}
-.btn.primary:hover:enabled{color:#fff;filter:brightness(1.07);background:linear-gradient(180deg,var(--accent),color-mix(in srgb,var(--accent) 82%,#000))}
+.btn.primary{background:var(--accent);border-color:transparent;color:#fff;box-shadow:none}
+.btn.primary:hover:enabled{color:#fff;filter:brightness(1.07);background:var(--accent)}
 .btn.ghost{background:transparent}
 .btn:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 .chip{display:inline-flex;align-items:center;gap:6px;font:inherit;font-size:11.5px;padding:4px 11px;border:.5px solid var(--line);border-radius:999px;background:var(--card-2);color:var(--text);cursor:pointer;transition:.14s;max-width:100%}
