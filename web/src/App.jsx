@@ -358,7 +358,6 @@ export default function App({ boot }) {
             <div className="secttl">报告
               <span className="acts">
                 <Button size="sm" color="success" isDisabled={!(selIssue && selIssue.status === 'REVIEW')} onPress={() => sel && act('merge', { id: sel })}>合并</Button>
-                <Button size="sm" color="primary" isDisabled={!(selIssue && selIssue.status === 'DONE')} onPress={() => sel && act('pr', { id: sel })}>建 PR</Button>
                 <Button size="sm" variant="flat" isDisabled={!(selIssue && selIssue.status === 'RUNNING')} onPress={() => sel && act('cancel', { id: sel })}>中止</Button>
               </span>
             </div>
