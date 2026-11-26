@@ -207,7 +207,7 @@ html[data-theme=dark] .toast{background:#e8eaf1;color:#0e1015}
 .btn.on{border-color:var(--accent);color:var(--accent);background:var(--accent-weak)}
 .btn.icon{padding:3px 9px;font-size:13px;line-height:1}
 /* —— 监控面板（工作室流程状态） —— */
-.mon{display:grid;grid-template-columns:repeat(6,1fr);gap:9px;margin:0 0 10px;flex:none}
+.mon{display:grid;grid-template-columns:repeat(auto-fit,minmax(86px,1fr));gap:9px;margin:0 0 10px;flex:none}
 .mcard{display:flex;flex-direction:column;gap:1px;padding:9px 12px;border:.5px solid var(--line-soft);border-radius:13px;background:var(--card-2)}
 .mcard b{font-size:17px;font-weight:750;line-height:1.1;font-variant-numeric:tabular-nums}
 .mcard span{font-size:10px;color:var(--muted);letter-spacing:.02em}
@@ -225,3 +225,19 @@ html[data-theme=dark] .toast{background:#e8eaf1;color:#0e1015}
 .tcard .lbl{min-width:38px}
 .growin{flex:1;min-width:0}
 .hint{font-size:10px;color:var(--muted)}
+/* —— 窄面板分体（DSH 右栏 ≈400px）：一次一个窗格，rail 窗格按钮切换 —— */
+@media (max-width:640px){
+  .rail{width:52px;padding:10px 0}
+  .rail .brand{width:32px;height:32px;margin-bottom:8px}
+  .rail .brand .bico{width:12px;height:12px}
+  .rbtn{width:38px;height:38px;border-radius:11px}
+  .rbtn.on::before{left:-8px;height:16px}
+  .grid{margin:8px;grid-template-columns:minmax(0,1fr)}
+  .col{padding:12px}
+  .col.left{border-right:0}
+  .top{padding:12px 14px 6px}
+  .src{margin:2px 12px 4px}
+  /* 默认显示左栏列表；side-collapsed 时换成右栏仪表 */
+  .app:not(.side-collapsed) .col.right{display:none}
+  .app.side-collapsed .col.left{display:none}
+}

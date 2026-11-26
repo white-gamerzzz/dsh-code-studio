@@ -95,6 +95,7 @@ export default function App({ boot }) {
   const [sel, setSel] = useState(undefined);
   const [expanded, setExpanded] = useState({});
   const [q, setQ] = useState('');
+  /* 窄面板（DSH 右栏）默认分体：一次只显示一个窗格，rail 的窗格按钮切换 */
   const [sideCollapsed, setSideCollapsed] = useState(false);
   const [srcOpen, setSrcOpen] = useState(false);
   const [toastMsg, setToastMsg] = useState(null);
