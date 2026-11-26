@@ -204,7 +204,7 @@ export default function App({ boot }) {
 
   return (
     <div className={'app' + (sideCollapsed ? ' side-collapsed' : '') + (SOLO_REPOS ? ' solo-repos' : '') + (SOLO_MONITOR ? ' solo-monitor' : '')}>
-      {!SOLO_REPOS && (
+      {!SOLO_REPOS && !SOLO_MONITOR && (
       <aside className="rail">
         <div className="brand" title="代码总编工作室">
           <svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="#fff" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
@@ -265,7 +265,7 @@ export default function App({ boot }) {
         )}
 
         {SOLO_REPOS ? (
-          <ReposView repos={repos} workspaces={workspaces} act={act} toast={toast} issues={issues} onOpen={pickRepo} />
+          <ReposView repos={repos} workspaces={workspaces} act={act} toast={toast} issues={issues} onOpen={pickRepo} selRepo={repo} />
         ) : (
         <main className="grid">
           {!SOLO_MONITOR && (
@@ -368,10 +368,9 @@ function Mc({ b, label }) {
   return <Card className="mcard" shadow="none"><b>{b}</b><span>{label}</span></Card>;
 }
 
-/* BH 左侧「仓库列表」面板：授权工作区 → 仓库卡片；点卡片 → 右侧监控面板 */
-function ReposView({ repos, workspaces, act, toast, issues, onOpen }) {
+/* BH 左侧「仓库列表」面板：授权工作区 → 仓库行（名+简介+状态条）；点行 → 右侧监控面板自动切换 */
+function ReposView({ repos, workspaces, act, toast, issues, onOpen, selRepo }) {
   const [v, setV] = useState('');
-  const [open, setOpen] = useState('');
   const metaOf = (its) => {
     const n = its.length;
     const c = (s) => its.filter((i) => i.status === s).length;
@@ -381,6 +380,15 @@ function ReposView({ repos, workspaces, act, toast, issues, onOpen }) {
     if (c('DONE')) m += ' · 完' + c('DONE');
     if (c('FAILED')) m += ' · 败' + c('FAILED');
     return m;
+  };
+  /* 仓库状态灯：按最需要关注的单子定色 running > review > failed > done > idle */
+  const stOf = (its) => {
+    const c = (s) => its.filter((i) => i.status === s).length;
+    if (c('RUNNING')) return 'running';
+    if (c('REVIEW')) return 'review';
+    if (c('FAILED')) return 'failed';
+    if (c('DONE') && c('DONE') === its.length) return 'done';
+    return 'idle';
   };
   return (
     <main className="wsview">
@@ -392,25 +400,14 @@ function ReposView({ repos, workspaces, act, toast, issues, onOpen }) {
       <div className="wslist2">
         {repos.map((r) => {
           const its = issues.filter((i) => i.__dir === r.dir);
-          const expanded = open === r.dir;
+          const active = selRepo === r.dir;
           return (
-            <div key={r.dir} className="wsitem">
-              <div className="wshd" onClick={() => setOpen(expanded ? '' : r.dir)}>
-                <span className="wsarrow">{expanded ? '▾' : '▸'}</span>
+            <div key={r.dir} data-st={stOf(its)} className={'wsitem' + (active ? ' active' : '')} onClick={() => onOpen(r.dir, its.length ? String(its[0].id) : undefined)}>
+              <div className="wshd">
                 <span className="wsname">{r.name}</span>
                 <span className="wsmeta">{metaOf(its)}</span>
-                <button className="wsopen" title="打开监控面板" onClick={(e) => { e.stopPropagation(); onOpen(r.dir, its.length ? String(its[0].id) : undefined); }}>监控</button>
               </div>
-              {expanded && (
-                <div className="wsissues">
-                  {its.length === 0 ? <div className="wsiempty">暂无 issue</div> : its.map((i) => (
-                    <div key={String(i.id)} className="wsirow" onClick={() => onOpen(r.dir, String(i.id))}>
-                      <span className={'wsitag st-' + String(i.status || 'READY').toLowerCase()}>{i.status}</span>
-                      <span className="wsititle" title={i.title}>{'#' + i.id + ' ' + (i.title || '(无标题)')}</span>
-                    </div>
-                  ))}
-                </div>
-              )}
+              <div className="wsdesc">{r.desc || '—'}</div>
             </div>
           );
         })}
