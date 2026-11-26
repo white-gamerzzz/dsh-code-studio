@@ -333,7 +333,7 @@ export default function App({ boot }) {
                               <span className="iav"><i>{'#' + id}</i></span>
                               <div className="imid">
                                 <div className="ittl">{it.title || it.body || '(untitled)'}</div>
-                                <div className="isub"><span className="ist">{it.status || '待派'}</span>{it.region && <span className="ireg">{'· ' + it.region}</span>}</div>
+                                <div className="isub"><span className="ist">{it.status || '待派'}</span>{it.region && <span className="ireg">{'· ' + it.region}</span>}{it.repoName && <span className="ireg">{'· ' + it.repoName}</span>}</div>
                               </div>
                             </div>
                           );
@@ -357,8 +357,8 @@ export default function App({ boot }) {
             <Graph issues={issues} regions={regions} />
             <div className="secttl">报告
               <span className="acts">
-                <Button size="sm" color="success" isDisabled={!(selIssue && selIssue.status === 'REVIEW')} onPress={() => sel && act('merge', { id: sel })}>合并</Button>
-                <Button size="sm" variant="flat" isDisabled={!(selIssue && selIssue.status === 'RUNNING')} onPress={() => sel && act('cancel', { id: sel })}>中止</Button>
+                <Button size="sm" color="success" isDisabled={!(selIssue && selIssue.status === 'REVIEW')} onPress={() => sel && act('merge', { id: sel, dir: selIssue.__dir })}>合并</Button>
+                <Button size="sm" variant="flat" isDisabled={!(selIssue && selIssue.status === 'RUNNING')} onPress={() => sel && act('cancel', { id: sel, dir: selIssue.__dir })}>中止</Button>
               </span>
             </div>
             <Report issue={selIssue} regions={regions} />
