@@ -63,7 +63,7 @@ description: 多子 Agent 团队与多项目并行开工的协调工具（code-s
 ## 多单并发
 
 - 不同 issue 默认并行分叉，各开各的副本，不预判冲突；撞车留给合并时暴露（照 GitHub 的做法）。
-- 同一片文件夹必须串行时，给 region 开 `queue:true`（`code_studio` `{action:"set", region:"<名>", queue:true}`）。
+- 整个仓库必须串行时，开仓库级 `queue`（`code_studio` `{action:"set", queue:true}`，不带 id）；有在飞单时不接新单（REPO_QUEUED），关掉恢复默认并行分叉。
 - 派单前先 `code_state` 看台账：REVIEW 的等合并、RUNNING 的别再派、FAILED 的看报告归因。
 
 ## 失败归因纪律

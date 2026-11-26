@@ -77,15 +77,15 @@ function applyTheme(t) {
 }
 
 // ---- 工作状态图 ----
-function Graph({ issues, regions }) {
+function Graph({ issues }) {
   const boxRef = useRef(null);
   return (
     <div className="graph" ref={boxRef}>
-      <GraphSvg boxRef={boxRef} issues={issues} regions={regions} />
+      <GraphSvg boxRef={boxRef} issues={issues} />
     </div>
   );
 }
-function GraphSvg({ boxRef, issues, regions }) {
+function GraphSvg({ boxRef, issues }) {
   const [W, setW] = useState(520);
   useEffect(() => {
     const read = () => { if (boxRef.current) setW(Math.max(boxRef.current.clientWidth || 520, 320)); };
@@ -94,10 +94,16 @@ function GraphSvg({ boxRef, issues, regions }) {
     return () => window.removeEventListener('resize', read);
   }, [boxRef]);
   const H = 178;
-  const names = Object.keys(regions);
-  if (!names.length) return <svg viewBox={'0 0 ' + W + ' ' + H} width="100%" height={H}><text x="14" y={H / 2} className="nsub">还没有区域，派单后自动建</text></svg>;
+  const repos = [];
+  for (const it of issues) {
+    const name = String(it.repoName || (it.__dir ? it.__dir.replace(/[\\/]+$/, '').split(/[\\/]/).pop() : '')) || '(未归属)';
+    let g = repos.find((r) => r.name === name);
+    if (!g) { g = { name, issues: [] }; repos.push(g); }
+    g.issues.push(it);
+  }
+  if (!repos.length) return <svg viewBox={'0 0 ' + W + ' ' + H} width="100%" height={H}><text x="14" y={H / 2} className="nsub">还没有 issue，备单后出现在这里</text></svg>;
   const rootX = 40, regX = Math.min(170, W * 0.34), issX = Math.max(regX + 130, W - 120);
-  const rootY = H / 2, topPad = 20, band = H / names.length;
+  const rootY = H / 2, topPad = 20, band = H / repos.length;
   const line = (x1, y1, x2, y2) => <path key={'l' + x1 + y1 + x2 + y2} d={'M' + x1 + ' ' + y1 + ' C' + ((x1 + x2) / 2) + ' ' + y1 + ' ' + ((x1 + x2) / 2) + ' ' + y2 + ' ' + x2 + ' ' + y2} className="edge" />;
   const nodes = [];
   const edges = [];
@@ -106,14 +112,14 @@ function GraphSvg({ boxRef, issues, regions }) {
   circles.push(<circle key="root" cx={rootX} cy={rootY} r={12} className="node root" />);
   texts.push(<text key="roott" x={rootX} y={rootY - 19} className="nlabel" textAnchor="middle">workspace</text>);
   texts.push(<text key="roots" x={rootX} y={rootY + 25} className="nsub" textAnchor="middle">{issues.length + ' issue'}</text>);
-  names.forEach((name, i) => {
-    const ris = issues.filter((x) => String(x.region || '') === name);
-    const ry = topPad + ((H - topPad * 2) / names.length) * (i + 0.5);
+  repos.forEach((g, i) => {
+    const ris = g.issues;
+    const ry = topPad + ((H - topPad * 2) / repos.length) * (i + 0.5);
     edges.push(line(rootX + 12, rootY, regX - 9, ry));
     const running = ris.some((x) => x.status === 'RUNNING');
-    circles.push(<circle key={'r' + name} cx={regX} cy={ry} r={9} className={'node reg' + (running ? ' run' : '')} />);
-    texts.push(<text key={'rt' + name} x={regX} y={ry - 16} className="nlabel" textAnchor="middle">{name || '—'}</text>);
-    texts.push(<text key={'rs' + name} x={regX} y={ry + 22} className="nsub" textAnchor="middle">{ris.length + ' 个 issue'}</text>);
+    circles.push(<circle key={'r' + g.name} cx={regX} cy={ry} r={9} className={'node reg' + (running ? ' run' : '')} />);
+    texts.push(<text key={'rt' + g.name} x={regX} y={ry - 16} className="nlabel" textAnchor="middle">{g.name}</text>);
+    texts.push(<text key={'rs' + g.name} x={regX} y={ry + 22} className="nsub" textAnchor="middle">{ris.length + ' 个 issue'}</text>);
     const span = Math.min(band * 0.82, Math.max(ris.length - 1, 1) * 26);
     ris.forEach((it, k) => {
       const iy = ris.length === 1 ? ry : ry - span / 2 + (span / (ris.length - 1)) * k;
@@ -205,13 +211,17 @@ export default function App({ boot }) {
   }, [theme, toast]);
 
   const issues = (snap && snap.issues) || [];
-  const regions = (snap && snap.regions) || {};
+
+  const repoKey = (it) => String(it.repoName || (it.__dir ? it.__dir.replace(/[\\/]+$/, '').split(/[\\/]/).pop() : '')) || '(未归属)';
 
   const groups = useMemo(() => {
-    const names = Object.keys(regions);
-    let gs = names.map((name) => ({ name, issues: issues.filter((i) => String(i.region || '') === name) }));
-    const orphans = issues.filter((i) => !i.region || !regions[i.region]);
-    if (orphans.length) gs.push({ name: '未归区', issues: orphans, orphan: true });
+    const byRepo = new Map();
+    for (const it of issues) {
+      const name = repoKey(it);
+      if (!byRepo.has(name)) byRepo.set(name, []);
+      byRepo.get(name).push(it);
+    }
+    let gs = [...byRepo.keys()].sort((a, b) => a.localeCompare(b, 'zh-Hans-CN')).map((name) => ({ name, issues: byRepo.get(name) }));
     const qq = String(q || '').trim().toLowerCase();
     if (qq) {
       const m = (s) => String(s == null ? '' : s).toLowerCase().includes(qq);
@@ -219,7 +229,8 @@ export default function App({ boot }) {
              .filter((g) => g.issues.length || m(g.name));
     }
     return gs;
-  }, [issues, regions, q]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [issues, q]);
 
   const cRun = issues.filter((i) => i.status === 'RUNNING').length;
   const cReview = issues.filter((i) => i.status === 'REVIEW').length;
@@ -275,7 +286,7 @@ export default function App({ boot }) {
             <span className="dot" />
             <div className="ttlwrap">
               <h1>工作室</h1>
-              <span className="sub2">代码总编 · 按区域派单</span>
+              <span className="sub2">代码总编 · 按仓库派单</span>
             </div>
             <Chip size="sm" variant="flat" className="pill">{issues.length + ' 个 issue'}</Chip>
           </div>
@@ -304,12 +315,12 @@ export default function App({ boot }) {
             <SearchField className="search" aria-label="搜索" value={q} onChange={setQ}>
               <SearchField.Group>
                 <SearchField.SearchIcon />
-                <SearchField.Input placeholder="搜索 issue / 区域" />
+                <SearchField.Input placeholder="搜索 issue / 仓库" />
               </SearchField.Group>
             </SearchField>
-            <div className="secttl">区域 <Chip size="sm" variant="flat" className="pill sm">{Object.keys(regions).length}</Chip></div>
+            <div className="secttl">仓库 <Chip size="sm" variant="flat" className="pill sm">{groups.length}</Chip></div>
             <div className="tree">
-              {!groups.length && <div className="empty">还没有区域（派单后自动建）</div>}
+              {!groups.length && <div className="empty">还没有 issue（备单后出现在这里）</div>}
               {groups.map((g) => {
                 const key = g.orphan ? '\u0000orphan' : g.name;
                 const running = g.issues.some((i) => i.status === 'RUNNING');
@@ -320,12 +331,12 @@ export default function App({ boot }) {
                          onClick={() => { setExpanded((e) => ({ ...e, [key]: !open })); if (!open && g.issues[0]) setSel(String(g.issues[0].id)); }}>
                       <span className="caret">{open ? '▾' : '▸'}</span>
                       {running && <span className="rdot" />}
-                      <span className="tname">{g.orphan ? '未归区' : (g.name || '—')}</span>
+                      <span className="tname">{g.name}</span>
                       <b className="tcount">{g.issues.length}</b>
                     </div>
                     {open && (
                       <div className="tgroup-kids">
-                        {!g.issues.length && <div className="empty sm">这个区域还没有 issue</div>}
+                        {!g.issues.length && <div className="empty sm">这个仓库还没有 issue</div>}
                         {g.issues.map((it) => {
                           const id = String(it.id);
                           return (
@@ -333,7 +344,7 @@ export default function App({ boot }) {
                               <span className="iav"><i>{'#' + id}</i></span>
                               <div className="imid">
                                 <div className="ittl">{it.title || it.body || '(untitled)'}</div>
-                                <div className="isub"><span className="ist">{it.status || '待派'}</span>{it.region && <span className="ireg">{'· ' + it.region}</span>}{it.repoName && <span className="ireg">{'· ' + it.repoName}</span>}</div>
+                                <div className="isub"><span className="ist">{it.status || '待派'}</span>{Array.isArray(it.tags) && it.tags.length > 0 && <span className="ireg">{'· ' + it.tags.join(',')}</span>}</div>
                               </div>
                             </div>
                           );
@@ -349,19 +360,19 @@ export default function App({ boot }) {
           <section className="col right">
             <section className="mon">
               <Mc b={cRun} label="进行中" /><Mc b={cReview} label="待合并" /><Mc b={cQueue} label="待派" /><Mc b={cDone} label="已完成" />
-              <Mc b={cFail} label="异常" /><Mc b={Object.keys(regions).length} label="区域" /><Mc b={srcName} label="数据源" />
+              <Mc b={cFail} label="异常" /><Mc b={groups.length} label="仓库" /><Mc b={srcName} label="数据源" />
             </section>
             <div className="secttl">工作状态
               <span className="legend"><i className="d" />完成 <i className="v" />待合并 <i className="r" />进行 <i className="f" />失败</span>
             </div>
-            <Graph issues={issues} regions={regions} />
+            <Graph issues={issues} />
             <div className="secttl">报告
               <span className="acts">
                 <Button size="sm" color="success" isDisabled={!(selIssue && selIssue.status === 'REVIEW')} onPress={() => sel && act('merge', { id: sel, dir: selIssue.__dir })}>合并</Button>
                 <Button size="sm" variant="flat" isDisabled={!(selIssue && selIssue.status === 'RUNNING')} onPress={() => sel && act('cancel', { id: sel, dir: selIssue.__dir })}>中止</Button>
               </span>
             </div>
-            <Report issue={selIssue} regions={regions} />
+            <Report issue={selIssue} />
           </section>
         </main>
       </div>
@@ -395,14 +406,15 @@ function PatSave({ act, toast }) {
   );
 }
 
-function Report({ issue, regions }) {
+function Report({ issue }) {
   if (!issue) return <div className="report empty">选一个 issue 看报告</div>;
-  const fold = ((regions[issue.region] || {}).folders) || issue.folders || [];
+  const fold = issue.folders || [];
   return (
     <div className="report">
       <div className="meta">
-        {issue.region && <span className="chip sm">区域 · {issue.region}</span>}
+        {issue.repoName && <span className="chip sm">仓库 · {issue.repoName}</span>}
         {fold.length > 0 && <span className="chip sm">{fold.join(', ')}</span>}
+        {Array.isArray(issue.tags) && issue.tags.length > 0 && <span className="chip sm">{issue.tags.join(', ')}</span>}
       </div>
       {issue.prUrl && <a className="prlink" href={issue.prUrl} target="_blank" rel="noreferrer">{issue.prUrl}</a>}
       {issue.changedFiles && issue.changedFiles.length > 0 && (
