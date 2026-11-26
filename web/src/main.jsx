@@ -28,6 +28,9 @@ function inheritHostTokens() {
     '--dsw-alias-state-business-primary', '--dsw-alias-state-success-primary',
     '--dsw-alias-state-warn-primary', '--dsw-alias-state-error-primary',
     '--dsw-font-family-default', '--dsw-font-family-mono',
+    /* BH（BotHarness）主题令牌：styles.ts :root 定义的 --bh-* 多数是 alias 的再包装，
+       拷过来后 studio.css 的 var(--bh-accent, …) 才能吃到 BH 侧的主题色 */
+    '--bh-accent', '--bh-hover', '--bh-selected', '--bh-surface-selected',
   ];
   const root = document.documentElement.style;
   const copyTokens = () => {
@@ -37,7 +40,7 @@ function inheritHostTokens() {
       if (v) root.setProperty(name, v);
     }
     for (const name of cs) {
-      if (name.startsWith('--dsw-')) {
+      if (name.startsWith('--dsw-') || name.startsWith('--bh-')) {
         const v = cs.getPropertyValue(name).trim();
         if (v) root.setProperty(name, v);
       }

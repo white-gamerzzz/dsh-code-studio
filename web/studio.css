@@ -6,10 +6,10 @@
    嵌在 DSH 里自动随宿主主题翻色，独立打开也不裸奔。 */
 :root{
   --bg:var(--dsw-alias-bg-base,#f4f5f8);
-  --panel:var(--dsw-alias-bg-layer-1,var(--dsw-alias-bg-card,#eceef3));--card:var(--dsw-alias-bg-layer-2,#fff);--card-2:var(--dsw-alias-interactive-bg-hover,rgba(38,49,72,.055));
+  --panel:var(--dsw-alias-bg-layer-1,var(--dsw-alias-bg-card,#eceef3));--card:var(--dsw-alias-bg-layer-2,#fff);--card-2:var(--bh-hover,var(--dsw-alias-interactive-bg-hover,rgba(38,49,72,.055)));
   --line:var(--dsw-alias-border-hairline,rgba(15,17,21,.08));--line-soft:rgba(15,17,21,.045);
   --text:var(--dsw-alias-text-primary,#0f172a);--muted:var(--dsw-alias-label-secondary,#64748b);
-  --accent:var(--dsw-alias-state-business-primary,#3b82f6);--accent-weak:color-mix(in srgb,var(--accent) 9%,transparent);--accent-line:color-mix(in srgb,var(--accent) 35%,transparent);
+  --accent:var(--bh-accent,var(--dsw-alias-state-business-primary,#3b82f6));--accent-weak:color-mix(in srgb,var(--accent) 9%,transparent);--accent-line:color-mix(in srgb,var(--accent) 35%,transparent);
   --done:var(--dsw-alias-state-success-primary,#16a34a);--run:var(--dsw-alias-state-warn-primary,#d97706);--fail:var(--dsw-alias-state-error-primary,#dc2626);--review:var(--accent);
   --radius:12px;
   --shadow:0 0 0 .5px var(--line);            /* BH 风格：描边代替投影 */
@@ -241,3 +241,7 @@ html[data-theme=dark] .toast{background:#e8eaf1;color:#0e1015}
   .app:not(.side-collapsed) .col.right{display:none}
   .app.side-collapsed .col.left{display:none}
 }
+/* —— BH 双面板模式（?view=repos / ?view=monitor）—— */
+.app.solo-repos .rail,.app.solo-repos .top{display:none}
+.app.solo-repos .grid{grid-template-columns:minmax(0,1fr)}
+.app.solo-monitor .col.left{display:none}

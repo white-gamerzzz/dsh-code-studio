@@ -90,9 +90,15 @@ const RAIL_BOT = [
   { id: 'rRefresh', icon: '⟳', title: '刷新' },
 ];
 
+/* BH 双面板模式：?view=repos 只渲染仓库列表；?view=monitor 只渲染监控。
+   两个 iframe 同源共享 localStorage，选中的 issue 互相跟随。 */
+const VIEW = typeof window !== 'undefined' ? (new URLSearchParams(window.location.search).get('view') || '') : '';
+const SOLO_REPOS = VIEW === 'repos';
+const SOLO_MONITOR = VIEW === 'monitor';
+
 export default function App({ boot }) {
   const [snap, setSnap] = useState(null);
-  const [sel, setSel] = useState(undefined);
+  const [sel, setSel] = useState(() => { try { return localStorage.getItem('cs.sel') || undefined; } catch { return undefined; } });
   const [expanded, setExpanded] = useState({});
   const [q, setQ] = useState('');
   /* 窄面板（DSH 右栏）默认分体：一次只显示一个窗格，rail 的窗格按钮切换 */
@@ -114,6 +120,19 @@ export default function App({ boot }) {
   }, [toast]);
 
   useEffect(() => { load(); const t = setInterval(load, 6000); return () => clearInterval(t); }, [load]);
+
+  /* 双面板跟随：仓库列表面板选中 issue → 监控面板跟着切（storage 事件只在另一个文档触发） */
+  useEffect(() => {
+    if (!SOLO_MONITOR && !SOLO_REPOS) return () => undefined;
+    const on = (e) => { if (e.key === 'cs.sel' && e.newValue) setSel(e.newValue); };
+    window.addEventListener('storage', on);
+    return () => window.removeEventListener('storage', on);
+  }, []);
+
+  const pickSel = (id) => {
+    setSel(id);
+    try { localStorage.setItem('cs.sel', String(id)); } catch { /* 无痕模式忽略 */ }
+  };
 
   const act = useCallback(async (op, extra) => {
     try {
@@ -166,7 +185,8 @@ export default function App({ boot }) {
   const gh = (snap && snap.github) || {};
 
   return (
-    <div className={'app' + (sideCollapsed ? ' side-collapsed' : '')}>
+    <div className={'app' + (sideCollapsed ? ' side-collapsed' : '') + (SOLO_REPOS ? ' solo-repos' : '') + (SOLO_MONITOR ? ' solo-monitor' : '')}>
+      {!SOLO_REPOS && (
       <aside className="rail">
         <div className="brand" title="代码总编工作室">
           <svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="#fff" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
@@ -192,8 +212,10 @@ export default function App({ boot }) {
           ))}
         </div>
       </aside>
+      )}
 
       <div className="main">
+        {!SOLO_REPOS && (
         <header className="top">
           <div className="ttl">
             <span className="dot" />
@@ -204,6 +226,7 @@ export default function App({ boot }) {
             <Chip size="sm" variant="flat" className="pill">{issues.length + ' 个 issue'}</Chip>
           </div>
         </header>
+        )}
 
         {loadErr && <div className="errbanner">读取失败：{loadErr}</div>}
 
@@ -224,6 +247,7 @@ export default function App({ boot }) {
         )}
 
         <main className="grid">
+          {!SOLO_MONITOR && (
           <aside className="col left">
             <SearchField className="search" aria-label="搜索" value={q} onChange={setQ}>
               <SearchField.Group>
@@ -241,7 +265,7 @@ export default function App({ boot }) {
                 return (
                   <div key={key}>
                     <div className={'tgroup-head' + (open ? ' open' : '') + (running ? ' running' : '')}
-                         onClick={() => { setExpanded((e) => ({ ...e, [key]: !open })); if (!open && g.issues[0]) setSel(String(g.issues[0].id)); }}>
+                         onClick={() => { setExpanded((e) => ({ ...e, [key]: !open })); if (!open && g.issues[0]) pickSel(String(g.issues[0].id)); }}>
                       <span className="caret">{open ? '▾' : '▸'}</span>
                       {running && <span className="rdot" />}
                       <span className="tname">{g.name}</span>
@@ -253,7 +277,7 @@ export default function App({ boot }) {
                         {g.issues.map((it) => {
                           const id = String(it.id);
                           return (
-                            <div key={id} className={'issrow' + (id === sel ? ' sel' : '')} data-st={tagOf(it.status)} onClick={() => setSel(id)}>
+                            <div key={id} className={'issrow' + (id === sel ? ' sel' : '')} data-st={tagOf(it.status)} onClick={() => pickSel(id)}>
                               <span className="iav"><i>{'#' + id}</i></span>
                               <div className="imid">
                                 <div className="ittl">{it.title || it.body || '(untitled)'}</div>
@@ -269,6 +293,7 @@ export default function App({ boot }) {
               })}
             </div>
           </aside>
+          )}
 
           <section className="col right">
             <section className="mon">
@@ -294,7 +319,6 @@ export default function App({ boot }) {
     </div>
   );
 }
-
 function Mc({ b, label }) {
   return <Card className="mcard" shadow="none"><b>{b}</b><span>{label}</span></Card>;
 }
