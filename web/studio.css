@@ -237,4 +237,47 @@ html[data-theme=dark] .toast{background:#e8eaf1;color:#0e1015}
 .tcard .lbl{min-width:38px}
 .growin{flex:1;min-width:0}
 .hint{font-size:10px;color:var(--muted)}
+/* —— HeroUI 槽位覆盖：组件库吃宿主令牌（BH 同款观感，先改样式不砍库） —— */
+/* 总则：字体继承宿主，去掉 HeroUI 自带的底色/阴影/大圆角，全部走 token */
+body [data-slot]{font-family:inherit}
+/* Button：安静文本钮 + 描边 hover；主按钮（solid）accent 实底 */
+body [data-slot="button"]{
+  border:0;background:transparent;color:var(--text);border-radius:10px;
+  font-weight:600;font-size:12.5px;box-shadow:none;transition:background .14s var(--ease),color .14s var(--ease)}
+body [data-slot="button"]:hover{background:var(--card-2)}
+body [data-slot="button"]:active{background:color-mix(in srgb,var(--accent) 14%,transparent)}
+body [data-slot="button"]:focus-visible{outline:none;box-shadow:0 0 0 2px var(--accent-line)}
+body [data-slot="button"][data-variant="solid"],body [data-slot="button"][aria-pressed="true"]{
+  background:var(--accent);color:#fff}
+body [data-slot="button"][data-variant="solid"]:hover{background:color-mix(in srgb,var(--accent) 86%,#000)}
+body [data-slot="button"][data-disabled="true"],body [data-slot="button"][aria-disabled="true"]{
+  opacity:.42;background:transparent;color:var(--muted)}
+/* Chip：细描边小药丸，弱化到 BH 的 label-secondary 档 */
+body [data-slot="chip"]{
+  border:.5px solid var(--line);background:var(--card-2);color:var(--muted);
+  border-radius:999px;box-shadow:none;font-weight:500}
+body [data-slot="chip-label"]{font-size:10.5px;line-height:1.4}
+/* Card：容器退场（底/边/影全交给我们的 .mcard/.tcard 等 wrapper 画） */
+body [data-slot="card"]{background:transparent;border:0;box-shadow:none;border-radius:0}
+body [data-slot="card-header"],body [data-slot="card-footer"]{padding:0}
+body [data-slot="card-content"]{padding:0}
+/* Input / SearchField：透明底 + 发丝描边，聚焦 accent 细环 */
+body [data-slot="input"],body [data-slot="search-field-group"]{
+  background:transparent;border:.5px solid var(--line);border-radius:10px;box-shadow:none;
+  color:var(--text);font-size:12.5px;transition:border-color .14s var(--ease),box-shadow .14s var(--ease)}
+body [data-slot="input"]:hover,body [data-slot="search-field-group"]:hover{border-color:color-mix(in srgb,var(--text) 18%,transparent)}
+body [data-slot="input"]:focus,body [data-slot="input"]:focus-within,
+body [data-slot="search-field-group"]:focus-within{
+  outline:none;border-color:var(--accent);box-shadow:0 0 0 2px var(--accent-weak)}
+body [data-slot="search-field-input"]{background:transparent;border:0;box-shadow:none;color:var(--text)}
+body [data-slot="search-field-input"]:focus{outline:none;box-shadow:none}
+body [data-slot="search-field-search-icon"],body [data-slot="search-field-clear-button"]{color:var(--muted);background:transparent;border:0;box-shadow:none}
+body [data-slot="search-field-clear-button"]:hover{background:var(--card-2)}
+/* Switch：token 化轨道与拇指 */
+body [data-slot="switch-control"]{background:var(--card-2);border:.5px solid var(--line);box-shadow:none;border-radius:999px;transition:background .14s var(--ease)}
+body [data-slot="switch-control"][data-selected="true"],body [data-slot="switch"][data-selected="true"] [data-slot="switch-control"]{background:var(--accent);border-color:var(--accent)}
+body [data-slot="switch-thumb"]{background:var(--card);box-shadow:0 1px 2px rgba(0,0,0,.2)}
+body [data-slot="switch"][data-selected="true"] [data-slot="switch-thumb"]{background:#fff}
+/* Tooltip：深面板 + 发丝边 */
+body [data-slot="tooltip-root"] > *{background:var(--text);color:var(--bg);border:.5px solid var(--line);border-radius:10px;box-shadow:var(--shadow-lg);font-size:11.5px}
 @media(max-width:620px){.rail{width:52px}.grid{grid-template-columns:1fr;margin:6px 12px 12px}.col.left{border-right:0;border-bottom:.5px solid var(--line-soft);padding-right:0;padding-bottom:12px}.col.right{padding-left:0}.src{margin:2px 12px 4px}.top{padding:12px 12px 8px}.mon{grid-template-columns:repeat(3,1fr);margin:2px 12px 6px}.tcard{right:10px;left:10px;width:auto}}
