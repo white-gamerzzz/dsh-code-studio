@@ -78,7 +78,7 @@ const reportErr = (msg) => {
     }).catch(() => { /* 尽力而为 */ });
   } catch { /* 尽力而为 */ }
 };
-window.addEventListener('error', (e) => reportErr(`error: ${e.message || 'unknown'}`));
+window.addEventListener('error', (e) => reportErr(`error: ${e.message || 'unknown'}\n${(e.error && e.error.stack) || ''}`.slice(0, 900)));
 window.addEventListener('unhandledrejection', (e) => reportErr(`rejection: ${String(e.reason).slice(0, 200)}`));
 
 createRoot(document.getElementById('root')).render(<App boot={boot} />);
