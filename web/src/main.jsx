@@ -16,10 +16,25 @@ function inheritHostTokens() {
   if (!parentDoc || parentDoc === document) return;
   const host = parentDoc.documentElement;
   const cs = window.parent.getComputedStyle(host);
+  /* 面板实际消费的宿主别名清单（定点拷，不依赖 computedStyle 迭代——
+     部分引擎的迭代不含自定义属性，光 for...of 会静默拷不到） */
+  const NEED = [
+    '--dsw-alias-bg-base', '--dsw-alias-bg-layer-1', '--dsw-alias-bg-layer-2', '--dsw-alias-bg-layer-3',
+    '--dsw-alias-bg-overlay', '--dsw-alias-interactive-bg-hover',
+    '--dsw-alias-border-hairline', '--dsw-alias-text-primary', '--dsw-alias-label-secondary',
+    '--dsw-alias-state-business-primary', '--dsw-alias-state-success-primary',
+    '--dsw-alias-state-warn-primary', '--dsw-alias-state-error-primary',
+    '--dsw-font-family-default', '--dsw-font-family-mono',
+  ];
+  const root = document.documentElement.style;
+  for (const name of NEED) {
+    const v = cs.getPropertyValue(name).trim();
+    if (v) root.setProperty(name, v);
+  }
   for (const name of cs) {
     if (name.startsWith('--dsw-')) {
       const v = cs.getPropertyValue(name).trim();
-      if (v) document.documentElement.style.setProperty(name, v);
+      if (v) root.setProperty(name, v);
     }
   }
   const syncTheme = () => {
