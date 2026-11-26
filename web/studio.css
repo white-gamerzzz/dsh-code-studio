@@ -249,11 +249,26 @@ html[data-theme=dark] .toast{background:#e8eaf1;color:#0e1015}
 .wsview{padding:14px;display:flex;flex-direction:column;gap:10px;overflow:auto}
 .wsadd{display:flex;gap:8px}
 .wsadd .input{flex:1}
-.wsgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
-.wscard{border:1px solid var(--stroke);border-radius:10px;background:var(--card);padding:12px}
-.wscard:hover{border-color:var(--accent)}
-.wsname{font-weight:600;font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.wssub{font-size:12px;color:var(--muted);margin-top:4px}
+.wslist2{display:flex;flex-direction:column;gap:2px}
+.wsitem{border:1px solid var(--stroke);border-radius:8px;background:var(--card);overflow:hidden}
+.wsitem+.wsitem{margin-top:4px}
+.wshd{display:flex;align-items:center;gap:8px;padding:6px 8px;cursor:pointer;min-height:30px}
+.wshd:hover{background:var(--bh-hover,var(--card-2))}
+.wsarrow{font-size:10px;color:var(--muted);flex:none;width:10px}
+.wsname{font-weight:600;font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;min-width:0}
+.wsmeta{font-size:11px;color:var(--muted);flex:none}
+.wsopen{flex:none;font-size:11px;padding:2px 8px;border:1px solid var(--stroke);border-radius:6px;background:transparent;color:var(--fg);cursor:pointer}
+.wsopen:hover{border-color:var(--accent);color:var(--accent)}
+.wsissues{border-top:1px solid var(--stroke);padding:2px 4px 4px}
+.wsirow{display:flex;align-items:center;gap:8px;padding:4px 6px;border-radius:6px;cursor:pointer;font-size:12px}
+.wsirow:hover{background:var(--bh-hover,var(--card-2))}
+.wsitag{flex:none;font-size:10px;padding:1px 6px;border-radius:999px;border:1px solid var(--stroke)}
+.wsitag.st-running{color:#f59e0b;border-color:#f59e0b66}
+.wsitag.st-review{color:#60a5fa;border-color:#60a5fa66}
+.wsitag.st-done{color:#34d399;border-color:#34d39966}
+.wsitag.st-failed{color:#f87171;border-color:#f8717166}
+.wsititle{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.wsiempty{padding:6px;font-size:12px;color:var(--muted)}
 .wslist{display:flex;flex-direction:column;gap:4px}
 .wsrow{display:flex;align-items:center;justify-content:space-between;gap:8px;border:1px solid var(--stroke);border-radius:8px;padding:4px 10px}
 .wsdir{font-size:12px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}

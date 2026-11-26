@@ -371,6 +371,17 @@ function Mc({ b, label }) {
 /* BH 左侧「仓库列表」面板：授权工作区 → 仓库卡片；点卡片 → 右侧监控面板 */
 function ReposView({ repos, workspaces, act, toast, issues, onOpen }) {
   const [v, setV] = useState('');
+  const [open, setOpen] = useState('');
+  const metaOf = (its) => {
+    const n = its.length;
+    const c = (s) => its.filter((i) => i.status === s).length;
+    let m = n + ' 单';
+    if (c('RUNNING')) m += ' · 进行' + c('RUNNING');
+    if (c('REVIEW')) m += ' · 待合' + c('REVIEW');
+    if (c('DONE')) m += ' · 完' + c('DONE');
+    if (c('FAILED')) m += ' · 败' + c('FAILED');
+    return m;
+  };
   return (
     <main className="wsview">
       <div className="secttl">仓库 <Chip size="sm" variant="flat" className="pill sm">{repos.length}</Chip></div>
@@ -378,16 +389,31 @@ function ReposView({ repos, workspaces, act, toast, issues, onOpen }) {
         <Input size="sm" className="input" placeholder="粘贴工作区绝对路径授权，如 D:\code" value={v} onChange={(e) => setV(e.target.value)} />
         <Button size="sm" color="primary" variant="flat" onPress={() => { const s = v.trim(); if (!s) return toast('填工作区绝对路径', true); setV(''); act('authorize', { wsDir: s }); }}>授权</Button>
       </div>
-      <div className="wsgrid">
-        {repos.map((r) => (
-          <Card key={r.dir} shadow="none" className="wscard" isPressable onPress={() => {
-            const first = issues.find((i) => i.__dir === r.dir);
-            onOpen(r.dir, first ? String(first.id) : undefined);
-          }}>
-            <div className="wsname">{r.name}</div>
-            <div className="wssub">{r.count + ' 个 issue'}</div>
-          </Card>
-        ))}
+      <div className="wslist2">
+        {repos.map((r) => {
+          const its = issues.filter((i) => i.__dir === r.dir);
+          const expanded = open === r.dir;
+          return (
+            <div key={r.dir} className="wsitem">
+              <div className="wshd" onClick={() => setOpen(expanded ? '' : r.dir)}>
+                <span className="wsarrow">{expanded ? '▾' : '▸'}</span>
+                <span className="wsname">{r.name}</span>
+                <span className="wsmeta">{metaOf(its)}</span>
+                <button className="wsopen" title="打开监控面板" onClick={(e) => { e.stopPropagation(); onOpen(r.dir, its.length ? String(its[0].id) : undefined); }}>监控</button>
+              </div>
+              {expanded && (
+                <div className="wsissues">
+                  {its.length === 0 ? <div className="wsiempty">暂无 issue</div> : its.map((i) => (
+                    <div key={String(i.id)} className="wsirow" onClick={() => onOpen(r.dir, String(i.id))}>
+                      <span className={'wsitag st-' + String(i.status || 'READY').toLowerCase()}>{i.status}</span>
+                      <span className="wsititle" title={i.title}>{'#' + i.id + ' ' + (i.title || '(无标题)')}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          );
+        })}
         {!repos.length && <div className="empty">还没有仓库。粘贴一个工作区绝对路径授权，或让 bot 调 code_studio authorize。</div>}
       </div>
       {workspaces.length > 0 && (
