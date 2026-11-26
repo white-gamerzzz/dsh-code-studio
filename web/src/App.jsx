@@ -2,8 +2,6 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Button } from '@heroui/react/button';
 import { Chip } from '@heroui/react/chip';
 import { Card } from '@heroui/react/card';
-import { Switch } from '@heroui/react/switch';
-import { Slider } from '@heroui/react/slider';
 import { Input } from '@heroui/react/input';
 import { SearchField } from '@heroui/react/search-field';
 import { Tooltip } from '@heroui/react/tooltip';
@@ -26,55 +24,8 @@ const tagOf = (s) => (s === 'DONE' ? 'done'
   : (s === 'FAILED' || s === 'BLOCKED' || s === 'CANCELLED') ? 'fail'
   : (s === 'RUNNING' || s === 'READY') ? 'run' : '');
 
-const hexToRgb = (h) => {
-  const x = String(h || '').replace('#', '');
-  const f = x.length === 3 ? x.split('').map((c) => c + c).join('') : x;
-  const n = parseInt(f, 16) || 0;
-  return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
-};
-
-const THEME_FIELDS = ['accent', 'radius', 'density', 'mode', 'bgType', 'bgColor', 'bgImage',
-  'glass', 'blur', 'saturation', 'grad', 'gradA', 'gradB', 'panelColor', 'panelOpacity'];
-
-function applyTheme(t) {
-  const root = document.documentElement;
-  const rgb = hexToRgb(t.accent);
-  root.style.setProperty('--accent', t.accent);
-  root.style.setProperty('--accent-weak', 'rgba(' + rgb.join(',') + ',0.15)');
-  root.style.setProperty('--accent-line', 'rgba(' + rgb.join(',') + ',0.45)');
-  root.style.setProperty('--radius', t.radius + 'px');
-  document.body.style.setProperty('font-size', t.density === 'compact' ? '12px' : '13px', 'important');
-  const want = t.mode === 'auto'
-    ? (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')
-    : t.mode;
-  root.dataset.theme = want;
-  root.classList.toggle('dark', want === 'dark');
-  const k = t.grad / 100;
-  const dark = want === 'dark';
-  let base = 'var(--bg)';
-  if (t.bgType === 'color') base = t.bgColor;
-  else if (t.bgType === 'image' && t.bgImage) base = 'url("' + String(t.bgImage).replace(/"/g, '') + '") center/cover no-repeat fixed';
-  const layers = [];
-  if (dark && t.grad > 0) {
-    const A = hexToRgb(t.gradA).join(','); const B = hexToRgb(t.gradB).join(',');
-    layers.push('radial-gradient(500px 500px at 8% -6%,rgba(' + A + ',' + (0.75 * k).toFixed(3) + '),rgba(' + A + ',0) 70%)');
-    layers.push('radial-gradient(400px 400px at 104% 22%,rgba(' + B + ',' + (0.55 * k).toFixed(3) + '),rgba(' + B + ',0) 70%)');
-    layers.push('radial-gradient(600px 600px at 26% 108%,rgba(249,168,212,' + (0.4 * k).toFixed(3) + '),rgba(249,168,212,0) 70%)');
-    if (t.bgType === 'theme') base = 'linear-gradient(135deg,#111827,#1f2937 52%,#111827)';
-  }
-  if (t.bgType === 'image' && t.bgImage) layers.push('linear-gradient(rgba(10,12,18,.62),rgba(10,12,18,.72))');
-  layers.push(base);
-  document.body.style.setProperty('background', layers.join(','), 'important');
-  const pbg = t.panelColor
-    ? 'rgba(' + hexToRgb(t.panelColor).join(',') + ',' + (t.panelOpacity / 100).toFixed(2) + ')'
-    : 'color-mix(in srgb,var(--card) ' + t.panelOpacity + '%,transparent)';
-  document.querySelectorAll('.grid').forEach((n) => n.style.setProperty('background', pbg, 'important'));
-  document.body.classList.toggle('glass-on', !!t.glass);
-  const pgf = 'blur(' + (t.glass ? t.blur : 24) + 'px) saturate(' + (t.glass ? t.saturation : 160) + '%)';
-  document.querySelectorAll('.grid').forEach((n) => { n.style.backdropFilter = pgf; n.style.webkitBackdropFilter = pgf; });
-  const gf = t.glass ? 'blur(' + t.blur + 'px) saturate(' + t.saturation + '%)' : '';
-  document.querySelectorAll('.src,.tcard,.card,.report,.graph,.mcard').forEach((n) => { n.style.backdropFilter = gf; n.style.webkitBackdropFilter = gf; });
-}
+/* 主题已交还宿主：颜色/深浅色全部走 studio.css 的 --dsw-alias 令牌 +
+   main.jsx 的 syncTheme 跟随，不再有面板自绘背景/玻璃/渐变。 */
 
 // ---- 工作状态图 ----
 function Graph({ issues }) {
@@ -136,7 +87,6 @@ const RAIL = [
 ];
 const RAIL_BOT = [
   { id: 'rSrc', icon: '⇄', title: '数据源' },
-  { id: 'rTheme', icon: '⚙', title: '外观设置' },
   { id: 'rRefresh', icon: '⟳', title: '刷新' },
 ];
 
@@ -147,32 +97,9 @@ export default function App({ boot }) {
   const [q, setQ] = useState('');
   const [sideCollapsed, setSideCollapsed] = useState(false);
   const [srcOpen, setSrcOpen] = useState(false);
-  const [cardOpen, setCardOpen] = useState(false);
   const [toastMsg, setToastMsg] = useState(null);
   const [loadErr, setLoadErr] = useState(null);
   const lastErrRef = useRef(null);
-  const [theme, setTheme] = useState(() => {
-    const b = (boot && boot.theme) || {};
-    const out = {}; for (const k of THEME_FIELDS) out[k] = b[k];
-    if (!out.accent) out.accent = '#6b93ff';
-    if (out.radius == null) out.radius = 12;
-    if (!out.density) out.density = 'comfy';
-    if (!out.mode) out.mode = 'auto';
-    if (!out.bgType) out.bgType = 'theme';
-    if (!out.bgColor) out.bgColor = '#0e1015';
-    if (out.bgImage == null) out.bgImage = '';
-    if (out.glass == null) out.glass = false;
-    if (out.blur == null) out.blur = 16;
-    if (out.saturation == null) out.saturation = 140;
-    if (out.grad == null) out.grad = 55;
-    if (!out.gradA) out.gradA = '#8b5cf6';
-    if (!out.gradB) out.gradB = '#2b6cff';
-    if (out.panelColor == null) out.panelColor = '';
-    if (out.panelOpacity == null) out.panelOpacity = 62;
-    return out;
-  });
-  const presets = (boot && boot.presets) || {};
-  const themeSet = useRef(false);
 
   const toast = useCallback((msg, bad) => {
     setToastMsg({ msg, bad });
@@ -185,11 +112,6 @@ export default function App({ boot }) {
     catch (e) { const m = String((e && e.message) || e); setLoadErr(m); if (m !== lastErrRef.current) toast('读取失败：' + m, true); lastErrRef.current = m; }
   }, [toast]);
 
-  useEffect(() => {
-    applyTheme(theme);
-    if (!themeSet.current) { themeSet.current = true; }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [theme]);
   useEffect(() => { load(); const t = setInterval(load, 6000); return () => clearInterval(t); }, [load]);
 
   const act = useCallback(async (op, extra) => {
@@ -200,15 +122,6 @@ export default function App({ boot }) {
       return r;
     } catch (e) { toast(e.message, true); return null; }
   }, [load, toast]);
-
-  const saveTheme = useCallback(async (patch) => {
-    const next = Object.assign({}, theme, patch);
-    setTheme(next);
-    try {
-      const t = {}; for (const k of THEME_FIELDS) t[k] = next[k];
-      await api('/code-studio/api/action', { op: 'theme', theme: t });
-    } catch (e) { toast(e.message, true); }
-  }, [theme, toast]);
 
   const issues = (snap && snap.issues) || [];
 
@@ -244,7 +157,6 @@ export default function App({ boot }) {
   const railClick = (id) => {
     if (id === 'rRegion') { setSideCollapsed((v) => !v); return; }
     if (id === 'rSrc') { setSrcOpen((v) => !v); return; }
-    if (id === 'rTheme') { setCardOpen((v) => !v); return; }
     if (id === 'rRefresh') { act('scan'); return; }
   };
   const railOn = (id) => (id === 'rRegion' ? !sideCollapsed : id === 'rSrc' ? srcOpen : false);
@@ -377,7 +289,6 @@ export default function App({ boot }) {
         </main>
       </div>
 
-      {cardOpen && <ThemeCard theme={theme} presets={presets} saveTheme={saveTheme} toast={toast} onClose={() => setCardOpen(false)} />}
       {toastMsg && <div className={'toast show' + (toastMsg.bad ? ' bad' : '')}>{toastMsg.msg}</div>}
     </div>
   );
@@ -421,102 +332,6 @@ function Report({ issue }) {
         <div className="files">{issue.changedFiles.map((f) => <code key={String(f)}>{String(f)}</code>)}</div>
       )}
       <div className="body">{issue.report || (issue.status === 'FAILED' ? ('失败：' + (issue.error || '')) : '还没有报告')}</div>
-    </div>
-  );
-}
-
-function ThemeCard({ theme, presets, saveTheme, toast, onClose }) {
-  const [pos, setPos] = useState({ left: null, top: 64 });
-  const drag = useRef(null);
-  const onDown = (e) => {
-    if (e.target.closest('button')) return;
-    drag.current = { sx: e.clientX, sy: e.clientY, ox: e.currentTarget.parentElement.offsetLeft, oy: e.currentTarget.parentElement.offsetTop };
-    e.preventDefault();
-  };
-  useEffect(() => {
-    const mv = (e) => {
-      if (!drag.current) return;
-      const p = drag.current;
-      setPos({ left: Math.max(0, p.ox + e.clientX - p.sx), top: Math.max(0, p.oy + e.clientY - p.sy) });
-    };
-    const up = () => { drag.current = null; };
-    window.addEventListener('mousemove', mv); window.addEventListener('mouseup', up);
-    return () => { window.removeEventListener('mousemove', mv); window.removeEventListener('mouseup', up); };
-  }, []);
-  const style = { top: pos.top + 'px' };
-  if (pos.left != null) { style.left = pos.left + 'px'; style.right = 'auto'; }
-  const S = (patch) => saveTheme(patch);
-  return (
-    <div className="tcard" style={style}>
-      <div className="tcard-hd" onMouseDown={onDown}>
-        <span className="tcard-ttl">外观设置</span>
-        <Button isIconOnly size="sm" variant="light" className="btn ghost icon" onPress={onClose}>✕</Button>
-      </div>
-      <div className="tcard-bd">
-        <div className="trow"><span className="lbl">预设</span><span className="presets">
-          {Object.keys(presets).map((k) => (
-            <button key={k} className={'swatch' + (presets[k].accent === theme.accent ? ' on' : '')} title={presets[k].label}
-                    style={{ background: presets[k].accent }} onClick={() => S({ accent: presets[k].accent })} />
-          ))}
-        </span></div>
-        <div className="trow">
-          <span className="lbl">强调色</span>
-          <input className="color" type="color" value={theme.accent} onChange={(e) => S({ accent: e.target.value })} />
-          <Input size="sm" className="input hexin" value={theme.accent} onValueChange={(v) => { if (/^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(v)) S({ accent: v }); }} />
-        </div>
-        <div className="trow">
-          <span className="lbl">背景</span>
-          <Button size="sm" variant={theme.bgType === 'theme' ? 'flat' : 'light'} onPress={() => S({ bgType: 'theme' })}>跟随主题</Button>
-          <Button size="sm" variant={theme.bgType === 'color' ? 'flat' : 'light'} onPress={() => S({ bgType: 'color' })}>纯色</Button>
-          <Button size="sm" variant={theme.bgType === 'image' ? 'flat' : 'light'} onPress={() => S({ bgType: 'image' })}>图片</Button>
-        </div>
-        {theme.bgType === 'color' && (
-          <div className="trow"><span className="lbl" /><input className="color" type="color" value={theme.bgColor} onChange={(e) => S({ bgColor: e.target.value })} /><span className="hint">给整页铺一个纯色底</span></div>
-        )}
-        {theme.bgType === 'image' && (
-          <div className="trow"><span className="lbl" /><Input size="sm" className="input growin" placeholder="图片 URL（https://… 或 data:image/…）" defaultValue={theme.bgImage}
-            onValueChange={(v) => { const s = v.trim(); const ok = !s || s.indexOf('http://') === 0 || s.indexOf('https://') === 0 || s.indexOf('data:image/') === 0; if (ok) S({ bgImage: s }); else toast('图片地址要以 http(s):// 或 data:image/ 开头', true); }} /></div>
-        )}
-        <div className="trow">
-          <span className="lbl">渐变</span>
-          <input className="color" type="color" value={theme.gradA} onChange={(e) => S({ gradA: e.target.value })} />
-          <input className="color" type="color" value={theme.gradB} onChange={(e) => S({ gradB: e.target.value })} />
-          <input className="range growin" type="range" min="0" max="100" step="5" value={theme.grad} onChange={(e) => S({ grad: +e.target.value })} />
-          <b className="pill sm">{theme.grad}</b>
-        </div>
-        <div className="trow">
-          <span className="lbl">面板色</span>
-          <input className="color" type="color" value={theme.panelColor || '#12141d'} onChange={(e) => S({ panelColor: e.target.value })} />
-          <Button size="sm" variant="light" onPress={() => S({ panelColor: '' })}>跟随</Button>
-          <span className="lbl">不透明</span>
-          <input className="range growin" type="range" min="0" max="100" step="2" value={theme.panelOpacity} onChange={(e) => S({ panelOpacity: +e.target.value })} />
-          <b className="pill sm">{theme.panelOpacity}</b>
-        </div>
-        <div className="trow">
-          <span className="lbl">玻璃</span>
-          <Switch isSelected={theme.glass} onValueChange={(v) => S({ glass: v })} />
-          <span className="lbl">模糊</span>
-          <input className="range" type="range" min="0" max="30" step="1" value={theme.blur} onChange={(e) => S({ blur: +e.target.value })} />
-          <span className="lbl">饱和</span>
-          <input className="range" type="range" min="0" max="200" step="5" value={theme.saturation} onChange={(e) => S({ saturation: +e.target.value })} />
-        </div>
-        <div className="trow">
-          <span className="lbl">圆角</span>
-          <input className="range" type="range" min="0" max="20" step="1" value={theme.radius} onChange={(e) => S({ radius: +e.target.value })} />
-          <b className="pill sm">{theme.radius}</b>
-          <span className="lbl">密度</span>
-          <Button size="sm" variant={theme.density === 'comfy' ? 'flat' : 'light'} onPress={() => S({ density: 'comfy' })}>舒适</Button>
-          <Button size="sm" variant={theme.density === 'compact' ? 'flat' : 'light'} onPress={() => S({ density: 'compact' })}>紧凑</Button>
-        </div>
-        <div className="trow">
-          <span className="lbl">模式</span>
-          <Button size="sm" variant={theme.mode === 'auto' ? 'flat' : 'light'} onPress={() => S({ mode: 'auto' })}>跟随</Button>
-          <Button size="sm" variant={theme.mode === 'light' ? 'flat' : 'light'} onPress={() => S({ mode: 'light' })}>亮色</Button>
-          <Button size="sm" variant={theme.mode === 'dark' ? 'flat' : 'light'} onPress={() => S({ mode: 'dark' })}>深色</Button>
-          <span className="sep" />
-          <Button size="sm" variant="light" onPress={() => S({ accent: '#6b93ff', radius: 12, density: 'comfy', mode: 'auto', bgType: 'theme', bgColor: '#0e1015', bgImage: '', glass: false, blur: 16, saturation: 140, grad: 55, gradA: '#8b5cf6', gradB: '#2b6cff', panelColor: '', panelOpacity: 62 })}>恢复默认</Button>
-        </div>
-      </div>
     </div>
   );
 }
