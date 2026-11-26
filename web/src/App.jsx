@@ -99,6 +99,7 @@ const SOLO_MONITOR = VIEW === 'monitor';
 export default function App({ boot }) {
   const [snap, setSnap] = useState(null);
   const [sel, setSel] = useState(() => { try { return localStorage.getItem('cs.sel') || undefined; } catch { return undefined; } });
+  const [repo, setRepo] = useState(() => { try { return localStorage.getItem('cs.repo') || ''; } catch { return ''; } });
   const [expanded, setExpanded] = useState({});
   const [q, setQ] = useState('');
   /* 窄面板（DSH 右栏）默认分体：一次只显示一个窗格，rail 的窗格按钮切换 */
@@ -121,10 +122,13 @@ export default function App({ boot }) {
 
   useEffect(() => { load(); const t = setInterval(load, 6000); return () => clearInterval(t); }, [load]);
 
-  /* 双面板跟随：仓库列表面板选中 issue → 监控面板跟着切（storage 事件只在另一个文档触发） */
+  /* 双面板跟随：仓库列表面板选中 issue/仓库 → 监控面板跟着切（storage 事件只在另一个文档触发） */
   useEffect(() => {
     if (!SOLO_MONITOR && !SOLO_REPOS) return () => undefined;
-    const on = (e) => { if (e.key === 'cs.sel' && e.newValue) setSel(e.newValue); };
+    const on = (e) => {
+      if (e.key === 'cs.sel' && e.newValue) setSel(e.newValue);
+      if (e.key === 'cs.repo') setRepo(e.newValue || '');
+    };
     window.addEventListener('storage', on);
     return () => window.removeEventListener('storage', on);
   }, []);
@@ -132,6 +136,14 @@ export default function App({ boot }) {
   const pickSel = (id) => {
     setSel(id);
     try { localStorage.setItem('cs.sel', String(id)); } catch { /* 无痕模式忽略 */ }
+  };
+
+  /* 仓库列表 → 监控：写 cs.repo（+ 首个 issue 进 cs.sel），再让宿主打开监控面板 */
+  const pickRepo = (dir, firstId) => {
+    setRepo(dir || '');
+    try { localStorage.setItem('cs.repo', dir || ''); } catch { /* 无痕模式忽略 */ }
+    if (firstId) pickSel(firstId);
+    try { if (window.parent && window.parent !== window) window.parent.postMessage({ type: 'cs-open-monitor' }, '*'); } catch { /* 跨域忽略 */ }
   };
 
   const act = useCallback(async (op, extra) => {
@@ -144,6 +156,8 @@ export default function App({ boot }) {
   }, [load, toast]);
 
   const issues = (snap && snap.issues) || [];
+  const repos = (snap && snap.repos) || [];
+  const workspaces = (snap && snap.workspaces) || [];
 
   const repoKey = (it) => String(it.repoName || (it.__dir ? it.__dir.replace(/[\\/]+$/, '').split(/[\\/]/).pop() : '')) || '(未归属)';
 
@@ -165,11 +179,15 @@ export default function App({ boot }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [issues, q]);
 
-  const cRun = issues.filter((i) => i.status === 'RUNNING').length;
-  const cReview = issues.filter((i) => i.status === 'REVIEW').length;
-  const cDone = issues.filter((i) => i.status === 'DONE').length;
-  const cFail = issues.filter((i) => ['FAILED', 'BLOCKED', 'CANCELLED'].includes(i.status)).length;
-  const cQueue = issues.filter((i) => !i.status || i.status === 'READY' || i.status === 'PENDING').length;
+  /* 监控面板只看选中仓库（BH 双面板模式）；没选仓库就看全部 */
+  const monIssues = SOLO_MONITOR && repo ? issues.filter((i) => i.__dir === repo) : issues;
+  const repoMeta = repo ? repos.find((r) => r.dir === repo) : undefined;
+
+  const cRun = monIssues.filter((i) => i.status === 'RUNNING').length;
+  const cReview = monIssues.filter((i) => i.status === 'REVIEW').length;
+  const cDone = monIssues.filter((i) => i.status === 'DONE').length;
+  const cFail = monIssues.filter((i) => ['FAILED', 'BLOCKED', 'CANCELLED'].includes(i.status)).length;
+  const cQueue = monIssues.filter((i) => !i.status || i.status === 'READY' || i.status === 'PENDING').length;
   const srcName = snap && snap.github && snap.github.enabled ? 'GitHub' : (snap && snap.watch && snap.watch.enabled ? '收件箱' : '本地');
 
   const selIssue = issues.find((i) => String(i.id) === sel);
@@ -246,6 +264,9 @@ export default function App({ boot }) {
           </section>
         )}
 
+        {SOLO_REPOS ? (
+          <ReposView repos={repos} workspaces={workspaces} act={act} toast={toast} issues={issues} onOpen={pickRepo} />
+        ) : (
         <main className="grid">
           {!SOLO_MONITOR && (
           <aside className="col left">
@@ -296,14 +317,37 @@ export default function App({ boot }) {
           )}
 
           <section className="col right">
+            {SOLO_MONITOR && (
+              <div className="monrepo">
+                <span className="tname">{repoMeta ? repoMeta.name : (repo ? repo.split(/[\\/]/).pop() : '全部仓库')}</span>
+                {repo && <Button size="sm" variant="light" onPress={() => pickRepo('')}>看全部</Button>}
+              </div>
+            )}
             <section className="mon">
               <Mc b={cRun} label="进行中" /><Mc b={cReview} label="待合并" /><Mc b={cQueue} label="待派" /><Mc b={cDone} label="已完成" />
               <Mc b={cFail} label="异常" /><Mc b={groups.length} label="仓库" /><Mc b={srcName} label="数据源" />
             </section>
+            {SOLO_MONITOR && (
+              <div className="tree">
+                {!monIssues.length && <div className="empty">这个仓库还没有 issue</div>}
+                {monIssues.map((it) => {
+                  const id = String(it.id);
+                  return (
+                    <div key={id} className={'issrow' + (id === sel ? ' sel' : '')} data-st={tagOf(it.status)} onClick={() => pickSel(id)}>
+                      <span className="iav"><i>{'#' + id}</i></span>
+                      <div className="imid">
+                        <div className="ittl">{it.title || it.body || '(untitled)'}</div>
+                        <div className="isub"><span className="ist">{it.status || '待派'}</span>{Array.isArray(it.tags) && it.tags.length > 0 && <span className="ireg">{'· ' + it.tags.join(',')}</span>}</div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
             <div className="secttl">工作状态
               <span className="legend"><i className="d" />完成 <i className="v" />待合并 <i className="r" />进行 <i className="f" />失败</span>
             </div>
-            <Graph issues={issues} />
+            <Graph issues={monIssues} />
             <div className="secttl">报告
               <span className="acts">
                 <Button size="sm" color="success" isDisabled={!(selIssue && selIssue.status === 'REVIEW')} onPress={() => sel && act('merge', { id: sel, dir: selIssue.__dir })}>合并</Button>
@@ -313,6 +357,7 @@ export default function App({ boot }) {
             <Report issue={selIssue} />
           </section>
         </main>
+        )}
       </div>
 
       {toastMsg && <div className={'toast show' + (toastMsg.bad ? ' bad' : '')}>{toastMsg.msg}</div>}
@@ -321,6 +366,47 @@ export default function App({ boot }) {
 }
 function Mc({ b, label }) {
   return <Card className="mcard" shadow="none"><b>{b}</b><span>{label}</span></Card>;
+}
+
+/* BH 左侧「仓库列表」面板：授权工作区 → 仓库卡片；点卡片 → 右侧监控面板 */
+function ReposView({ repos, workspaces, act, toast, issues, onOpen }) {
+  const [v, setV] = useState('');
+  return (
+    <main className="wsview">
+      <div className="secttl">仓库 <Chip size="sm" variant="flat" className="pill sm">{repos.length}</Chip></div>
+      <div className="wsadd">
+        <Input size="sm" className="input" placeholder="粘贴工作区绝对路径授权，如 D:\code" value={v} onValueChange={setV} />
+        <Button size="sm" color="primary" variant="flat" onPress={() => { const s = v.trim(); if (!s) return toast('填工作区绝对路径', true); setV(''); act('authorize', { wsDir: s }); }}>授权</Button>
+      </div>
+      <div className="wsgrid">
+        {repos.map((r) => (
+          <Card key={r.dir} shadow="none" className="wscard" isPressable onPress={() => {
+            const first = issues.find((i) => i.__dir === r.dir);
+            onOpen(r.dir, first ? String(first.id) : undefined);
+          }}>
+            <Card.Body>
+              <div className="wsname">{r.name}</div>
+              <div className="wssub">{r.count + ' 个 issue'}</div>
+            </Card.Body>
+          </Card>
+        ))}
+        {!repos.length && <div className="empty">还没有仓库。粘贴一个工作区绝对路径授权，或让 bot 调 code_studio authorize。</div>}
+      </div>
+      {workspaces.length > 0 && (
+        <>
+          <div className="secttl">已授权工作区</div>
+          <div className="wslist">
+            {workspaces.map((w) => (
+              <div key={w} className="wsrow">
+                <span className="wsdir">{w}</span>
+                <Button size="sm" variant="light" onPress={() => act('unauthorize', { wsDir: w })}>移除</Button>
+              </div>
+            ))}
+          </div>
+        </>
+      )}
+    </main>
+  );
 }
 
 function GhBind({ act, toast }) {
