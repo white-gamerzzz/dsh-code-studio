@@ -15,7 +15,6 @@ function inheritHostTokens() {
   try { parentDoc = window.parent?.document; } catch { return; }
   if (!parentDoc || parentDoc === document) return;
   const host = parentDoc.documentElement;
-  const cs = window.parent.getComputedStyle(host);
   /* 面板实际消费的宿主别名清单（定点拷，不依赖 computedStyle 迭代——
      部分引擎的迭代不含自定义属性，光 for...of 会静默拷不到） */
   const NEED = [
@@ -27,24 +26,35 @@ function inheritHostTokens() {
     '--dsw-font-family-default', '--dsw-font-family-mono',
   ];
   const root = document.documentElement.style;
-  for (const name of NEED) {
-    const v = cs.getPropertyValue(name).trim();
-    if (v) root.setProperty(name, v);
-  }
-  for (const name of cs) {
-    if (name.startsWith('--dsw-')) {
+  const copyTokens = () => {
+    const cs = window.parent.getComputedStyle(host);
+    for (const name of NEED) {
       const v = cs.getPropertyValue(name).trim();
       if (v) root.setProperty(name, v);
     }
-  }
+    for (const name of cs) {
+      if (name.startsWith('--dsw-')) {
+        const v = cs.getPropertyValue(name).trim();
+        if (v) root.setProperty(name, v);
+      }
+    }
+  };
+  const isDark = () => {
+    for (const el of [host, parentDoc.body]) {
+      if (!el) continue;
+      if (el.hasAttribute('data-ds-dark-theme')) return true;
+      if ((el.getAttribute('data-theme') || '').includes('dark')) return true;
+      if (el.classList && el.classList.contains('dark')) return true;
+    }
+    return false;
+  };
   const syncTheme = () => {
-    const dark = host.hasAttribute('data-ds-dark-theme') ||
-      (host.getAttribute('data-theme') || '').includes('dark');
-    if (dark) document.documentElement.setAttribute('data-theme', 'dark');
+    copyTokens();
+    if (isDark()) document.documentElement.setAttribute('data-theme', 'dark');
     else document.documentElement.removeAttribute('data-theme');
   };
   syncTheme();
-  new MutationObserver(syncTheme).observe(host, { attributes: true, attributeFilter: ['data-ds-dark-theme', 'data-theme', 'class'] });
+  new MutationObserver(syncTheme).observe(host, { attributes: true, attributeFilter: ['data-ds-dark-theme', 'data-theme', 'class', 'style'] });
 }
 
 try { inheritHostTokens(); } catch { /* 独立打开：用 fallback */ }
