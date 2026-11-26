@@ -250,7 +250,7 @@ html[data-theme=dark] .toast{background:#e8eaf1;color:#0e1015}
 .wsadd{display:flex;gap:8px}
 .wsadd .input{flex:1}
 .wsgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
-.wscard{border:1px solid var(--stroke);border-radius:10px;background:var(--card)}
+.wscard{border:1px solid var(--stroke);border-radius:10px;background:var(--card);padding:12px}
 .wscard:hover{border-color:var(--accent)}
 .wsname{font-weight:600;font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .wssub{font-size:12px;color:var(--muted);margin-top:4px}

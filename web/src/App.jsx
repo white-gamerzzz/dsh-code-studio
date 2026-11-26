@@ -384,10 +384,8 @@ function ReposView({ repos, workspaces, act, toast, issues, onOpen }) {
             const first = issues.find((i) => i.__dir === r.dir);
             onOpen(r.dir, first ? String(first.id) : undefined);
           }}>
-            <Card.Body>
-              <div className="wsname">{r.name}</div>
-              <div className="wssub">{r.count + ' 个 issue'}</div>
-            </Card.Body>
+            <div className="wsname">{r.name}</div>
+            <div className="wssub">{r.count + ' 个 issue'}</div>
           </Card>
         ))}
         {!repos.length && <div className="empty">还没有仓库。粘贴一个工作区绝对路径授权，或让 bot 调 code_studio authorize。</div>}
