@@ -1,23 +1,12 @@
 @import "@heroui/styles";
-/* Tailwind v4 主题：NapCat heroUI token 映射成 Tailwind 变量，utility 与组件类共用一套值 */
-@theme {
-  --color-bg: #181819;
-  --color-panel: #1c1c1f;
-  --color-card: #26262b;
-  --color-card2: #2e2e34;
-  --color-fg: #ecedf2;
-  --color-muted: #a1a1aa;
-  --color-primary: #3b82f6;
-  --radius-panel: 16px;
-  --blur-panel: 24px;
-}
 
 /* ---- 以下为组件级样式（手写，非 utility） ---- */
 *{box-sizing:border-box}
 /* 令牌化：优先消费宿主 DSH 的 dsw alias（跟 BotHarness 面板同一套），fallback 是现在的值 ——
    嵌在 DSH 里自动随宿主主题翻色，独立打开也不裸奔。 */
 :root{
-  --bg:#f4f5f8;--panel:var(--dsw-alias-bg-card,#eceef3);--card:#fff;--card-2:var(--dsw-alias-interactive-bg-hover,rgba(38,49,72,.055));
+  --bg:var(--dsw-alias-bg-base,#f4f5f8);
+  --panel:var(--dsw-alias-bg-layer-1,var(--dsw-alias-bg-card,#eceef3));--card:var(--dsw-alias-bg-layer-2,#fff);--card-2:var(--dsw-alias-interactive-bg-hover,rgba(38,49,72,.055));
   --line:var(--dsw-alias-border-hairline,rgba(15,17,21,.08));--line-soft:rgba(15,17,21,.045);
   --text:var(--dsw-alias-text-primary,#0f172a);--muted:var(--dsw-alias-label-secondary,#64748b);
   --accent:var(--dsw-alias-state-business-primary,#3b82f6);--accent-weak:color-mix(in srgb,var(--accent) 9%,transparent);--accent-line:color-mix(in srgb,var(--accent) 35%,transparent);
@@ -40,12 +29,11 @@ html[data-theme=dark]{
   --shadow-lg:0 8px 24px rgba(0,0,0,.35);
 }
 html,body{height:100%}
-body{margin:0;color:var(--text);
+body{margin:0;color:var(--text);background:var(--bg);
   font:13px/1.55 var(--dsw-font-family-default,-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif);
   -webkit-font-smoothing:antialiased}
-html[data-theme=dark] body{
-  background:var(--bg);   /* 去掉 NapCat 三色光斑，BH 是平面底色 */
-}
+/* 深浅色都由 --dsw-alias-bg-* 跟随宿主；这块只在独立打开且手动切深色时兜底 */
+html[data-theme=dark] body{background:var(--bg)}
 .app{display:flex;flex-direction:row;height:100vh;overflow:hidden;gap:0}
 /* —— 左侧图标窄栏 —— */
 .rail{flex:none;width:66px;display:flex;flex-direction:column;align-items:center;gap:6px;padding:14px 0;
