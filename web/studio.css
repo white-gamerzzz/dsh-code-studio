@@ -249,17 +249,16 @@ html[data-theme=dark] .toast{background:#e8eaf1;color:#0e1015}
 .wsview{padding:14px;display:flex;flex-direction:column;gap:10px;overflow:auto}
 .wsadd{display:flex;gap:8px}
 .wsadd .input{flex:1}
-.wslist2{display:flex;flex-direction:column;gap:2px}
-.wsitem{position:relative;border:1px solid var(--stroke);border-radius:8px;background:var(--card);padding:6px 8px 6px 12px;cursor:pointer;overflow:hidden}
-.wsitem+.wsitem{margin-top:4px}
-.wsitem:hover{background:var(--bh-hover,var(--card-2))}
-/* 两层选中：外层轮廓 + 最左竖状细条按状态变色 */
-.wsitem.active{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent)}
-.wsitem::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--stroke);transition:background .15s}
-.wsitem[data-st='running']::before{background:#f59e0b}
-.wsitem[data-st='review']::before{background:#60a5fa}
-.wsitem[data-st='failed']::before{background:#f87171}
-.wsitem[data-st='done']::before{background:#34d399}
+.wslist2{display:flex;flex-direction:column;gap:6px}
+.wsitem{position:relative;border:1px solid color-mix(in srgb,var(--stroke) 55%,transparent);border-radius:13px;background:var(--card);padding:7px 8px 7px 14px;cursor:pointer;transition:.13s;overflow:hidden}
+.wsitem:hover{background:var(--card-2);border-color:var(--stroke)}
+.wsitem.active{background:var(--accent-weak);border-color:color-mix(in srgb,var(--accent) 55%,transparent)}
+/* 状态灯条压在框线之上（框线在灯条底下） */
+.wsitem::before{content:'';position:absolute;left:-1px;top:7px;bottom:7px;width:3px;border-radius:3px;background:var(--line);transition:background .15s;z-index:1}
+.wsitem[data-st='running']::before{background:var(--run);box-shadow:0 0 6px color-mix(in srgb,var(--run) 55%,transparent)}
+.wsitem[data-st='review']::before{background:var(--review);box-shadow:0 0 6px color-mix(in srgb,var(--review) 55%,transparent)}
+.wsitem[data-st='failed']::before{background:var(--fail);box-shadow:0 0 6px color-mix(in srgb,var(--fail) 55%,transparent)}
+.wsitem[data-st='done']::before{background:var(--done)}
 .wshd{display:flex;align-items:center;gap:8px;min-height:20px}
 .wsname{font-weight:600;font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;min-width:0}
 .wsmeta{font-size:11px;color:var(--muted);flex:none}
