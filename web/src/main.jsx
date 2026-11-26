@@ -15,6 +15,10 @@ function inheritHostTokens() {
   try { parentDoc = window.parent?.document; } catch { return; }
   if (!parentDoc || parentDoc === document) return;
   const host = parentDoc.documentElement;
+  /* 深色标志打在宿主 body 上（dsh-client-ui-theme: body.toggleAttribute(
+     'data-ds-dark-theme')），深色别名值也在 body 作用域生效——
+     令牌必须从 body 的 computed style 读，从 html 读永远是浅色值。 */
+  const src = parentDoc.body || host;
   /* 面板实际消费的宿主别名清单（定点拷，不依赖 computedStyle 迭代——
      部分引擎的迭代不含自定义属性，光 for...of 会静默拷不到） */
   const NEED = [
@@ -27,7 +31,7 @@ function inheritHostTokens() {
   ];
   const root = document.documentElement.style;
   const copyTokens = () => {
-    const cs = window.parent.getComputedStyle(host);
+    const cs = window.parent.getComputedStyle(src);
     for (const name of NEED) {
       const v = cs.getPropertyValue(name).trim();
       if (v) root.setProperty(name, v);
@@ -54,7 +58,9 @@ function inheritHostTokens() {
     else document.documentElement.removeAttribute('data-theme');
   };
   syncTheme();
-  new MutationObserver(syncTheme).observe(host, { attributes: true, attributeFilter: ['data-ds-dark-theme', 'data-theme', 'class', 'style'] });
+  const mo = new MutationObserver(syncTheme);
+  mo.observe(src, { attributes: true, attributeFilter: ['data-ds-dark-theme', 'data-theme', 'class', 'style'] });
+  if (src !== host) mo.observe(host, { attributes: true, attributeFilter: ['data-ds-dark-theme', 'data-theme', 'class', 'style'] });
 }
 
 try { inheritHostTokens(); } catch { /* 独立打开：用 fallback */ }
