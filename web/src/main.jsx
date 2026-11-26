@@ -68,4 +68,17 @@ function inheritHostTokens() {
 
 try { inheritHostTokens(); } catch { /* 独立打开：用 fallback */ }
 
+/* 面板诊断：任何 JS 报错（含 React 渲染崩）回传服务端日志，白屏不再哑掉 */
+const reportErr = (msg) => {
+  try {
+    fetch('/code-studio/api/action', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ op: 'panelLog', msg: `${msg} @view=${new URLSearchParams(location.search).get('view') ?? ''}` }),
+    }).catch(() => { /* 尽力而为 */ });
+  } catch { /* 尽力而为 */ }
+};
+window.addEventListener('error', (e) => reportErr(`error: ${e.message || 'unknown'}`));
+window.addEventListener('unhandledrejection', (e) => reportErr(`rejection: ${String(e.reason).slice(0, 200)}`));
+
 createRoot(document.getElementById('root')).render(<App boot={boot} />);
