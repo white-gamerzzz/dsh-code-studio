@@ -375,7 +375,7 @@ function ReposView({ repos, workspaces, act, toast, issues, onOpen }) {
     <main className="wsview">
       <div className="secttl">仓库 <Chip size="sm" variant="flat" className="pill sm">{repos.length}</Chip></div>
       <div className="wsadd">
-        <Input size="sm" className="input" placeholder="粘贴工作区绝对路径授权，如 D:\code" value={v} onValueChange={setV} />
+        <Input size="sm" className="input" placeholder="粘贴工作区绝对路径授权，如 D:\code" value={v} onChange={(e) => setV(e.target.value)} />
         <Button size="sm" color="primary" variant="flat" onPress={() => { const s = v.trim(); if (!s) return toast('填工作区绝对路径', true); setV(''); act('authorize', { wsDir: s }); }}>授权</Button>
       </div>
       <div className="wsgrid">
@@ -411,7 +411,7 @@ function GhBind({ act, toast }) {
   const [v, setV] = useState('');
   return (
     <>
-      <Input size="sm" className="input" placeholder="owner/repo" value={v} onValueChange={setV} />
+      <Input size="sm" className="input" placeholder="owner/repo" value={v} onChange={(e) => setV(e.target.value)} />
       <Button size="sm" variant="flat" onPress={() => { const s = v.trim(); if (!s) return toast('填 owner/repo', true); act('github', { repo: s }); }}>绑定</Button>
     </>
   );
@@ -420,7 +420,7 @@ function PatSave({ act, toast }) {
   const [v, setV] = useState('');
   return (
     <>
-      <Input size="sm" type="password" className="input" placeholder="ghp_…" value={v} onValueChange={setV} />
+      <Input size="sm" type="password" className="input" placeholder="ghp_…" value={v} onChange={(e) => setV(e.target.value)} />
       <Button size="sm" variant="flat" onPress={() => { const s = v.trim(); if (!s) return toast('粘贴 PAT', true); setV(''); act('token', { token: s }); }}>保存</Button>
     </>
   );
