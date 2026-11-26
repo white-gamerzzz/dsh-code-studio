@@ -58,19 +58,9 @@ code_studio { action: "submit", id: "12", title: "修登录", body: "改 src/aut
 
 插件会归一化 folders/status、按 issue 自动组任务正文、按文件夹归 region 并派单记账。三个来源（本地收件 / GitHub issue / 前台 submit）都过同一个规范化入口 `lib/studio-intake.js`，形状统一后再进台账。
 
-### 工作区维护组（自动切到工作室模式）
+### 工作区维护组
 
-每个工作区（= 会话绑的那个文件夹）有一个**维护组**：只要满足任一条件，就把**前台会话的 Agent 预设自动切成 `code-editor`（代码总编/技术总监模式）**——
-
-1. 对话一开始就用「代码总编工作室」预设发起（`code-editor`）；
-2. 手动打开工作室右侧栏页（此时若当前会话还是空会话、没开始对话，会自动切）。
-
-规则：
-- 只对**空会话**（还没发过消息）自动切，不打断进行中的普通对话；
-- 每个会话每页面生命周期只尝试一次，不反复抢；
-- 面板顶部有**模式 chip**：显示「代码总编工作室 / 普通」；非工作室模式时右侧出现「切换到工作室模式」按钮，随时一键切。
-
-底层走 `remote.agentPresets.select(sessionId, 'code-editor')`，没有全局副作用，只作用于当前会话。
+插件不带预设、不注册主 Agent——装上就能用，谁当主 Agent（或 Bot）都一样。打开工作室右侧栏页时，面板会让宿主幂等地建一次 `<ws>/.code-studio/` 骨架（`autoCreate` 关了也无副作用）。操作手册以技能形式随包分发：`skills/code-studio/SKILL.md`（任何会话按任务自动命中，或 `/code-studio` 手动加载）。
 
 监听配置：`/code-studio-watch on|off|scan|interval <ms>`，或 `code_studio` 的 `watch` action。台账 `issues.json`/`regions.json` 统一落在**工作区根的 `<ws>/.code-studio/`**（不再散在各仓库 `.codewrite/`）；`watch.json`/`inbox/` 仍在 `<repo>/.codewrite/`。均为运行产物，建议进 `.gitignore`。
 
@@ -188,24 +178,14 @@ code_studio { action:"rule", op:"list" }        // 看当前规则
 - **侧栏可收起**：标题左侧 `‹/›` 按钮把左侧「区域树」折叠，右侧工作区自动占满。
 - **监控条**：六张卡片显示**工作室流程状态**（进行中 / 待派 / 已完成 / 异常 / 区域数 / 当前数据源），不是系统 CPU/内存这类资源占用。
 
-## 硬限制（code-guard）
-
-挂在 `presets/code-editor/agent.cordis.yml` 的预设子插件，只对使用本预设的总监会话生效：
-
-- 封：`write` / `edit` / `pwsh` / `bash` / `subagent` / `subagent_fork`。
-- 放行只读：`read` / `glob` / `grep` / `code_brief` / `code_state` / `code_check`。
-- 写白名单：`.codewrite/editor/*.md`（总监的记忆文件）。
-- 子 Agent 不受限制（guard 按 `origin:'subagent'` / `delegationDepth` 放行），但先校验 `write_scope`。
-
 ## 目录
 
 ```
-lib/          index.js(注册) code-guard.js dispatch.js executor.js ops.js orchestrator.js task-registry.js
-              session-roles.js packet.js runner.js agent-models.js
-              studio-store.js studio-memory.js studio-dispatch.js studio-watch.js
-              studio-github.js studio-pr.js studio-intake.js studio-route.js
-presets/code-editor/
-              preset.yml agent.cordis.yml orchestration.md roles/*.md(7)
+lib/                    index.js(注册) dispatch.js executor.js ops.js runner.js packet.js session-roles.js
+                        studio-store.js studio-memory.js studio-dispatch.js studio-watch.js
+                        studio-github.js studio-pr.js studio-intake.js studio-route.js
+                        studio-workspace.js studio-rules.js studio-repo.js studio-web.js studio-theme.js
+skills/code-studio/     SKILL.md（操作手册，bundled 扫描自动进技能目录）
 ```
 
 每个 `studio-*.js` 都是可独立自测的纯逻辑模块（`node lib/studio-store.js` 等自带 demo）。
@@ -254,7 +234,7 @@ onEnd(handler) -> unsubscribe          // 要结算就必须有
 
 ## 复用说明（ponytail）
 
-`task-registry.js` / `orchestrator.js` / `dispatch.js` / `session-roles.js` 四份从 novel 插件逐字搬来，只改了状态目录前缀（`.codewrite/`）与工具名（`code_dispatch`）。不为一个常量复制整份模块，也不重造已有的编排逻辑。
+`dispatch.js` / `session-roles.js` 两份从 novel 插件逐字搬来，只改了状态目录前缀（`.codewrite/`）与工具名。不为一个常量复制整份模块，也不重造已有的编排逻辑。
 
 ## 破障子系统（已拆为独立包）
 

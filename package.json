@@ -13,9 +13,6 @@
     ".": {
       "default": "./lib/index.js"
     },
-    "./code-guard": {
-      "default": "./lib/code-guard.js"
-    },
     "./client": "./lib/client.js",
     "./lib/session-roles": "./lib/session-roles.js",
     "./lib/dispatch": "./lib/dispatch.js",
@@ -45,7 +42,7 @@
   },
   "files": [
     "lib",
-    "presets",
+    "skills",
     "cordis.patch.yml",
     "README.md",
     "web"
