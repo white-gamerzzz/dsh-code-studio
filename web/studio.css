@@ -17,15 +17,15 @@
   --glow:0 0 0 1px var(--accent-line);
   --ease:cubic-bezier(0.23,1,0.32,1);
 }
-/* 深色：宿主 alias 会自己翻色，这里只兜独立打开（data-theme=dark）时的值；
-   底色抄 DSH neutral-bluish 体系（#0F1115 主文字 / #181819 画布） */
+/* 深色：写死值只作 fallback（独立打开时），凡宿主给了 alias/BH 令牌的一律优先 ——
+   否则拷来的宿主配色会被这段压掉（实测 body 背景停 #181819 就是它）。 */
 html[data-theme=dark]{
-  --bg:#181819;--panel:#1c1c1f;--card:#26262b;--card-2:rgba(255,255,255,.05);
-  --line:rgba(255,255,255,.10);--line-soft:rgba(255,255,255,.055);
-  --text:#ecedf2;--muted:#a1a1aa;
-  --accent:#3b82f6;--accent-weak:rgba(59,130,246,.16);--accent-line:rgba(59,130,246,.42);
-  --done:#22c55e;--run:#f59e0b;--fail:#ef4444;--review:#60a5fa;
-  --shadow:0 0 0 .5px rgba(255,255,255,.10);
+  --bg:var(--dsw-alias-bg-base,#181819);--panel:var(--dsw-alias-bg-layer-1,#1c1c1f);--card:var(--dsw-alias-bg-layer-2,#26262b);--card-2:var(--bh-hover,var(--dsw-alias-interactive-bg-hover,rgba(255,255,255,.05)));
+  --line:var(--dsw-alias-border-hairline,rgba(255,255,255,.10));--line-soft:rgba(255,255,255,.055);
+  --text:var(--dsw-alias-text-primary,#ecedf2);--muted:var(--dsw-alias-label-secondary,#a1a1aa);
+  --accent:var(--bh-accent,var(--dsw-alias-state-business-primary,#3b82f6));--accent-weak:color-mix(in srgb,var(--accent) 16%,transparent);--accent-line:color-mix(in srgb,var(--accent) 42%,transparent);
+  --done:var(--dsw-alias-state-success-primary,#22c55e);--run:var(--dsw-alias-state-warn-primary,#f59e0b);--fail:var(--dsw-alias-state-error-primary,#ef4444);--review:var(--accent);
+  --shadow:0 0 0 .5px var(--line);
   --shadow-lg:0 8px 24px rgba(0,0,0,.35);
 }
 html,body{height:100%}
@@ -34,6 +34,10 @@ body{margin:0;color:var(--text);background:var(--bg);
   -webkit-font-smoothing:antialiased}
 /* 深浅色都由 --dsw-alias-bg-* 跟随宿主；这块只在独立打开且手动切深色时兜底 */
 html[data-theme=dark] body{background:var(--bg)}
+/* 嵌入宿主（BH dock / DSH 右栏 iframe）时自身不画背景：透出宿主容器的材质与壁纸
+   （BH 的 --bh-global-body-fill 半透明材质画在 .dv-content-container 上），
+   背景跟随的终点是透明。独立打开无 data-embed，不受影响。 */
+html[data-embed],html[data-embed] body{background:transparent!important}
 .app{display:flex;flex-direction:row;height:100vh;overflow:hidden;gap:0}
 /* —— 左侧图标窄栏 —— */
 .rail{flex:none;width:66px;display:flex;flex-direction:column;align-items:center;gap:6px;padding:14px 0;
@@ -268,3 +272,30 @@ html[data-theme=dark] .toast{background:#e8eaf1;color:#0e1015}
 .wsdir{font-size:12px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .monrepo{display:flex;align-items:center;justify-content:space-between;padding:0 2px}
 .monrepo .tname{font-weight:700;font-size:15px}
+
+/* ===== 仓库列表面板：像素主题（与 demo 同款，只作用 ?view=repos） ===== */
+.app.solo-repos{
+  --px:'Fusion Pixel 12px Proportional SC',monospace;
+  background-image:conic-gradient(rgba(255,255,255,.024) 25%,transparent 0 50%,rgba(255,255,255,.024) 0 75%,transparent 0);
+  background-size:4px 4px;
+}
+.app.solo-repos .secttl{font-family:var(--px);font-size:14px;letter-spacing:1px;text-shadow:2px 2px 0 #000}
+.app.solo-repos .pill{border-radius:0;border-width:2px;box-shadow:2px 2px 0 #000;font-family:var(--px)}
+.app.solo-repos .wsitem{border:2px solid var(--line);border-radius:0;box-shadow:3px 3px 0 #000;overflow:visible}
+.app.solo-repos .wsitem:hover{background:var(--card-2);border-color:var(--line)}
+.app.solo-repos .wsitem:active{transform:translate(2px,2px);box-shadow:1px 1px 0 #000}
+.app.solo-repos .wsitem.active{border-color:var(--accent);box-shadow:3px 3px 0 #000}
+.app.solo-repos .wsitem::before{left:-2px;top:6px;bottom:6px;width:5px;border-radius:0}
+.app.solo-repos .wsitem[data-st='running']::before,
+.app.solo-repos .wsitem[data-st='review']::before,
+.app.solo-repos .wsitem[data-st='failed']::before{box-shadow:none}
+.app.solo-repos .wsname{font-family:var(--px);font-size:13px;text-shadow:2px 2px 0 #000;font-weight:400}
+.app.solo-repos .wsmeta{font-family:var(--px);font-size:11px}
+.app.solo-repos .wsrow{border:2px solid var(--line);border-radius:0;box-shadow:2px 2px 0 #000;padding:6px 10px}
+.app.solo-repos .wsadd .input,
+.app.solo-repos .wsadd input{border:2px solid var(--line)!important;border-radius:0!important;box-shadow:2px 2px 0 #000;background:var(--card)}
+.app.solo-repos .wsadd input:focus{border-color:var(--accent)!important}
+.app.solo-repos button{font-family:var(--px);font-size:12px;border:2px solid var(--line)!important;border-radius:0!important;
+  box-shadow:3px 3px 0 #000;background:var(--card-2);color:var(--text)}
+.app.solo-repos button:active{transform:translate(2px,2px);box-shadow:1px 1px 0 #000}
+.app.solo-repos .empty{border:2px dashed var(--line);border-radius:0;font-family:var(--px);font-size:12px;padding:22px;text-align:center}

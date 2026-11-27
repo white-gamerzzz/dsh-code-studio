@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>监控面板 v2 · 组件拆分版（高清像素节点）</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource/fusion-pixel-12px-proportional-sc@5.3.0/index.css">
+<link rel="stylesheet" href="demo.css">
+</head>
+<body>
+<div class="wrap">
+  <h1>监控面板 v2 · 组件拆分版</h1>
+  <div class="note">每个组件独立文件（components/），拼合引用。节点升级为高清像素球：小颗粒网格 + 描边圈 + 左上高光 + 右下阴影，版本节点带中心菱形宝石；分支仍是细线 S 弯。</div>
+
+  <!-- ① 像素进度条 + 一体滑块（components/timeline.js） -->
+  <div class="sect">① 像素进度条 = 时间轴滑块 <span class="tag">一体化</span></div>
+  <div class="card">
+    <div class="sub">直接在条上按住拖动；斜纹持续向前滚动；绿方块=版本节点。</div>
+    <div class="pxbar" id="pxbar">
+      <div class="seg"></div>
+      <div class="fill" id="pxfill"></div>
+      <div class="vn" style="left:28%"><b>v1</b></div>
+      <div class="vn" style="left:56%"><b>v2</b></div>
+      <div class="vn" style="left:82%"><b>v3</b></div>
+      <div class="cursor" id="pxcursor" style="left:40%"></div>
+    </div>
+    <div id="pxread">区间 40%</div>
+  </div>
+
+  <!-- ② 生长树（components/pixel-art.js + growth-tree.js） -->
+  <div class="sect">② 项目生长树 <span class="tag">轮次区间 · 五色状态节点</span></div>
+  <div class="card">
+    <div class="sub">状态全靠节点颜色，与五种统计卡一致：灰=待派 → 橙=进行中 → 蓝=待合并 → 绿=已完成；红=异常。曲线只表示从主干分出（中性色，无回弯）；一轮全部完成 = 轮末版本节点亮绿。</div>
+    <button class="pxbtn" id="treplay">▶ 重新生长</button>
+    <div class="tree">
+      <svg class="treesvg" id="tree" width="100%" height="220" viewBox="0 0 900 220" preserveAspectRatio="xMinYMid meet"></svg>
+    </div>
+  </div>
+
+  <!-- ③ 统计卡兼筛选（components/issues.js） -->
+  <div class="sect">③ 统计卡 = 筛选按钮 <span class="tag">点击切换</span></div>
+  <div class="card">
+    <div class="sub">数字用像素字体；按下有 2px 位移的按压感；点卡片=筛选，再点取消。</div>
+    <div class="stats" id="stats">
+      <div class="stat" data-f="RUNNING"><div class="num">1</div><div class="lbl">进行中</div></div>
+      <div class="stat" data-f="REVIEW"><div class="num">0</div><div class="lbl">待合并</div></div>
+      <div class="stat" data-f="READY"><div class="num">1</div><div class="lbl">待派</div></div>
+      <div class="stat" data-f="DONE"><div class="num">1</div><div class="lbl">已完成</div></div>
+      <div class="stat" data-f="FAILED"><div class="num">0</div><div class="lbl">异常</div></div>
+    </div>
+  </div>
+
+  <!-- ④ issue 列表（components/issues.js） -->
+  <div class="sect">④ issue 列表 <span class="tag">组名+筛选条+灯条行</span></div>
+  <div class="card">
+    <div class="grphead"><span class="gname">default-workspace</span><span class="gcount" id="gcount"></span></div>
+    <div class="filters">
+      <select id="sortsel">
+        <option value="new">最新优先</option>
+        <option value="asc">编号升序</option>
+        <option value="desc">编号降序</option>
+      </select>
+      <input id="search" placeholder="搜索标题 / #编号">
+    </div>
+    <div class="ilist" id="ilist"></div>
+  </div>
+
+  <!-- ⑤ 报告大区（components/issues.js） -->
+  <div class="sect">⑤ 报告大区 <span class="tag">点 issue 联动</span></div>
+  <div class="card report" id="report">
+    <div class="empty">点上面 issue 行查看具体报告</div>
+  </div>
+</div>
+
+<script src="components/pixel-art.js"></script>
+<script src="components/growth-tree.js"></script>
+<script src="components/timeline.js"></script>
+<script src="components/issues.js"></script>
+</body>
+</html>

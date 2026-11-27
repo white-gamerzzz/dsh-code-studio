@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>监控面板 v2 · 像素曲线生长树（第四版）</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource/fusion-pixel-12px-proportional-sc@5.3.0/index.css">
+<style>
+:root{
+  --bg:#0e1116; --card:#171b21; --card-2:#1d232b; --line:#2a313b; --line2:#3a4350;
+  --text:#e8eaed; --sub:#8b93a1; --accent:#3b82f6; --accent-weak:#3b82f633;
+  --run:#f59e0b; --review:#60a5fa; --done:#34d399; --fail:#f87171; --idle:#565f6e;
+  --px:'Fusion Pixel 12px Proportional SC', monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font:13px/1.6 ui-sans-serif,system-ui,"Segoe UI";
+  background-image:conic-gradient(#ffffff06 25%, transparent 0 50%, #ffffff06 0 75%, transparent 0);
+  background-size:4px 4px;}
+.wrap{max-width:980px;margin:0 auto;padding:24px 16px 80px}
+h1{font-family:var(--px);font-size:18px;letter-spacing:1px;text-shadow:2px 2px 0 #000;font-weight:400}
+.note{color:var(--sub);margin:6px 0 24px}
+.sect{margin:36px 0 12px;font-family:var(--px);font-size:14px;letter-spacing:1px;
+  display:flex;gap:10px;align-items:center;text-shadow:2px 2px 0 #000;font-weight:400}
+.sect .tag{font-family:ui-sans-serif,system-ui;font-size:11px;color:var(--sub);
+  background:var(--card-2);border:1px solid var(--line);border-radius:0;padding:1px 8px;text-shadow:none}
+.card{background:var(--card);border:2px solid var(--line);border-radius:0;
+  box-shadow:4px 4px 0 #000;padding:16px}
+.sub{color:var(--sub);font-size:12px;margin:6px 0 12px}
+
+/* ---------- ① 像素进度条（滑块一体，直接拖条） ---------- */
+.pxbar{position:relative;height:30px;margin-top:20px;cursor:ew-resize;user-select:none;touch-action:none}
+.pxbar .seg{position:absolute;top:8px;left:0;height:14px;width:100%;
+  background:repeating-linear-gradient(45deg, var(--idle) 0 6px, transparent 6px 8px, var(--idle) 8px 8px, transparent 8px 12px);}
+.pxbar .fill{position:absolute;top:8px;left:0;height:14px;width:0;overflow:hidden;
+  background:repeating-linear-gradient(45deg,
+    var(--accent) 0 6px, var(--accent) 6px 8px, #7dabf8 8px 12px);
+  animation:march 1.1s linear infinite}
+@keyframes march{from{background-position:0 0}to{background-position:17px 0}}
+.pxbar .vn{position:absolute;top:0;width:6px;height:30px;background:var(--done);box-shadow:2px 2px 0 #000}
+.pxbar .vn b{position:absolute;top:-16px;left:50%;transform:translateX(-50%);
+  font-family:var(--px);font-size:12px;color:var(--done);text-shadow:2px 2px 0 #000}
+.pxbar .cursor{position:absolute;top:4px;width:10px;height:22px;background:var(--text);
+  box-shadow:3px 3px 0 #000}
+#pxread{font-family:var(--px);font-size:12px;color:var(--accent);margin-top:14px;text-shadow:2px 2px 0 #000}
+
+/* ---------- ② 生长树：平滑曲线 + 像素节点/主干 ---------- */
+.treesvg text{font-family:var(--px);font-size:11px;fill:var(--sub)}
+
+/* ---------- ③ 统计卡兼筛选 ---------- */
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(96px,1fr));gap:10px}
+.stat{background:var(--card-2);border:2px solid var(--line);border-radius:0;padding:10px 12px;
+  cursor:pointer;user-select:none;box-shadow:3px 3px 0 #000}
+.stat:active{transform:translate(2px,2px);box-shadow:1px 1px 0 #000}
+.stat .num{font-family:var(--px);font-size:22px}
+.stat .lbl{font-family:var(--px);font-size:11px;color:var(--sub);margin-top:2px;text-shadow:none}
+.stat:hover{border-color:var(--line2)}
+.stat.on{border-color:var(--accent);background:color-mix(in srgb,var(--accent-weak) 70%,var(--card-2))}
+.stat.on .num{color:var(--accent)}
+
+/* ---------- ④ issue 列表 ---------- */
+.grphead{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px}
+.grphead .gname{font-family:var(--px);font-size:14px;text-shadow:2px 2px 0 #000}
+.grphead .gcount{color:var(--sub);font-size:12px}
+.filters{display:flex;gap:8px;margin:8px 0}
+.filters select,.filters input{background:var(--card-2);border:2px solid var(--line);color:var(--text);
+  border-radius:0;padding:5px 10px;font-size:12px;outline:none;box-shadow:2px 2px 0 #000}
+.filters input{flex:1;font-family:ui-monospace,monospace}
+.filters select:focus,.filters input:focus{border-color:var(--accent)}
+.ilist{display:flex;flex-direction:column;gap:8px;margin-top:10px}
+.irow{position:relative;display:flex;align-items:center;gap:10px;background:var(--card);
+  border:2px solid var(--line);border-radius:0;padding:9px 12px;cursor:pointer;box-shadow:3px 3px 0 #000}
+.irow:hover{background:var(--card-2);border-color:var(--line2)}
+.irow.sel{border-color:var(--accent);background:color-mix(in srgb,var(--accent-weak) 60%,var(--card))}
+.irow::before{content:"";position:absolute;left:-2px;top:6px;bottom:6px;width:5px;background:var(--idle)}
+.irow[data-st=RUNNING]::before{background:var(--run)}
+.irow[data-st=REVIEW]::before{background:var(--review)}
+.irow[data-st=DONE]::before{background:var(--done)}
+.irow[data-st=FAILED]::before{background:var(--fail)}
+.irow .id{font-family:var(--px);font-size:12px;color:var(--sub)}
+.irow .tt{flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.irow .st{font-family:var(--px);font-size:11px;color:var(--sub)}
+
+/* ---------- ⑤ 报告大区 ---------- */
+.report h3{font-family:var(--px);font-size:14px;margin-bottom:8px;text-shadow:2px 2px 0 #000;font-weight:400}
+.report .meta{color:var(--sub);font-size:12px;display:flex;gap:14px;margin-bottom:10px;flex-wrap:wrap}
+.report .ops{display:flex;gap:10px;margin:10px 0}
+.report .ops button{font-family:var(--px);font-size:12px;background:var(--card-2);border:2px solid var(--line);
+  color:var(--text);border-radius:0;padding:6px 16px;cursor:pointer;box-shadow:3px 3px 0 #000}
+.report .ops button:active{transform:translate(2px,2px);box-shadow:1px 1px 0 #000}
+.report .ops button.primary{background:color-mix(in srgb,var(--accent) 35%,var(--card-2));border-color:var(--accent)}
+.report pre{background:#0e1116;border:2px solid var(--line);border-radius:0;padding:12px;
+  font:12px/1.6 ui-monospace,monospace;white-space:pre-wrap;color:#c3c9d4;max-height:220px;overflow:auto}
+.empty{color:var(--sub);border:2px dashed var(--line);border-radius:0;padding:28px;text-align:center;font-family:var(--px);font-size:12px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>监控面板 v2 · 像素曲线生长树</h1>
+  <div class="note">第四版：保留糊满全屏的轻松像素氛围；生长树重做——贝塞尔曲线量化到像素网格，弯的、但边缘是像素锯齿；节点是像素圆。</div>
+
+  <!-- ① 像素进度条 + 一体滑块 -->
+  <div class="sect">① 像素进度条 = 时间轴滑块 <span class="tag">一体化</span></div>
+  <div class="card">
+    <div class="sub">直接在条上按住拖动；斜纹持续向前滚动；绿方块=版本节点。</div>
+    <div class="pxbar" id="pxbar">
+      <div class="seg"></div>
+      <div class="fill" id="pxfill"></div>
+      <div class="vn" style="left:28%"><b>v1</b></div>
+      <div class="vn" style="left:56%"><b>v2</b></div>
+      <div class="vn" style="left:82%"><b>v3</b></div>
+      <div class="cursor" id="pxcursor" style="left:40%"></div>
+    </div>
+    <div id="pxread">区间 40%</div>
+  </div>
+
+  <!-- ② 像素曲线生长树 -->
+  <div class="sect">② 项目生长树（像素曲线） <span class="tag">曲线也能像素化</span></div>
+  <div class="card">
+    <div class="sub">分支是正常平滑曲线（绿=已合并弯回主干，橙=进行中只分叉）；节点和主干是像素块。</div>
+    <div class="tree">
+      <svg class="treesvg" id="tree" width="100%" height="200" viewBox="0 0 900 200" preserveAspectRatio="xMinYMid meet"></svg>
+    </div>
+  </div>
+
+  <!-- ③ 统计卡兼筛选 -->
+  <div class="sect">③ 统计卡 = 筛选按钮 <span class="tag">点击切换</span></div>
+  <div class="card">
+    <div class="sub">数字用像素字体；按下有 2px 位移的按压感；点卡片=筛选，再点取消。</div>
+    <div class="stats" id="stats">
+      <div class="stat" data-f="RUNNING"><div class="num">1</div><div class="lbl">进行中</div></div>
+      <div class="stat" data-f="REVIEW"><div class="num">0</div><div class="lbl">待合并</div></div>
+      <div class="stat" data-f="READY"><div class="num">1</div><div class="lbl">待派</div></div>
+      <div class="stat" data-f="DONE"><div class="num">1</div><div class="lbl">已完成</div></div>
+      <div class="stat" data-f="FAILED"><div class="num">0</div><div class="lbl">异常</div></div>
+    </div>
+  </div>
+
+  <!-- ④ issue 列表 -->
+  <div class="sect">④ issue 列表 <span class="tag">组名+筛选条+灯条行</span></div>
+  <div class="card">
+    <div class="grphead"><span class="gname">default-workspace</span><span class="gcount" id="gcount"></span></div>
+    <div class="filters">
+      <select id="sortsel">
+        <option value="new">最新优先</option>
+        <option value="asc">编号升序</option>
+        <option value="desc">编号降序</option>
+      </select>
+      <input id="search" placeholder="搜索标题 / #编号">
+    </div>
+    <div class="ilist" id="ilist"></div>
+  </div>
+
+  <!-- ⑤ 报告大区 -->
+  <div class="sect">⑤ 报告大区 <span class="tag">点 issue 联动</span></div>
+  <div class="card report" id="report">
+    <div class="empty">点上面 issue 行查看具体报告</div>
+  </div>
+</div>
+
+<script>
+// ===== ① 进度条一体滑块 =====
+const bar = document.getElementById('pxbar');
+let dragging = false;
+function setPct(clientX){
+  const r = bar.getBoundingClientRect();
+  const v = Math.max(0, Math.min(100, Math.round((clientX - r.left) / r.width * 100)));
+  document.getElementById('pxfill').style.width = v + '%';
+  document.getElementById('pxcursor').style.left = `calc(${v}% - 5px)`;
+  document.getElementById('pxread').textContent = '区间 ' + v + '%';
+}
+bar.addEventListener('pointerdown', e => { dragging = true; bar.setPointerCapture(e.pointerId); setPct(e.clientX); });
+bar.addEventListener('pointermove', e => { if (dragging) setPct(e.clientX); });
+bar.addEventListener('pointerup', () => dragging = false);
+setPct(bar.getBoundingClientRect().left + bar.getBoundingClientRect().width * 0.4);
+
+// ===== ② 像素曲线生长树 =====
+const svg = document.getElementById('tree');
+const NS = 'http://www.w3.org/2000/svg';
+const PX = 6; // 像素粒度（大颗粒，像素感明显）
+const C = { trunk:'#3a4350', live:'#3b82f6', run:'#f59e0b', done:'#34d399', node:'#1d232b', text:'#8b93a1' };
+function rect(x, y, s, fill){
+  const n = document.createElementNS(NS, 'rect');
+  n.setAttribute('x', x); n.setAttribute('y', y);
+  n.setAttribute('width', s); n.setAttribute('height', s);
+  n.setAttribute('fill', fill);
+  svg.appendChild(n);
+}
+// 分支 = 与现有面板同款的细线三次贝塞尔 S 弯（横向），只换颜色；节点/主干仍是像素块
+function smoothCurve(x0, y0, x1, y1, color){
+  const d = Math.max(30, Math.abs(x1 - x0) * 0.45);
+  const n = document.createElementNS(NS, 'path');
+  n.setAttribute('d', `M${x0} ${y0} C${x0 + d} ${y0} ${x1 - d} ${y1} ${x1} ${y1}`);
+  n.setAttribute('stroke', color); n.setAttribute('stroke-width', 1.5);
+  n.setAttribute('fill', 'none'); n.setAttribute('stroke-linecap', 'round');
+  svg.appendChild(n);
+}
+// 像素圆：遍历网格，距圆心 <= r 的格子填色
+function pixelCircle(cx, cy, r, fill, stroke){
+  const R = Math.ceil(r / PX) * PX;
+  for (let x = -R; x <= R; x += PX){
+    for (let y = -R; y <= R; y += PX){
+      const d = Math.hypot(x, y);
+      if (d <= r) rect(cx + x - PX/2, cy + y - PX/2, PX, (stroke && d > r - PX*1.4) ? stroke : fill);
+    }
+  }
+}
+function txt(x, y, s, fill){
+  const t = document.createElementNS(NS, 'text');
+  t.setAttribute('x', x); t.setAttribute('y', y); t.setAttribute('text-anchor', 'middle');
+  if (fill) t.setAttribute('fill', fill);
+  t.textContent = s; svg.appendChild(t);
+}
+
+const T = 100; // 主干 y
+// 主干：6×6 像素块两层（厚 12），生长中的段用亮色
+function trunkSeg(x, fill){ rect(x, T - PX, PX, fill); rect(x, T, PX, fill); }
+for (let x = 30; x <= 870; x += PX) trunkSeg(x, C.trunk);
+for (let x = 300; x <= 600; x += PX) trunkSeg(x, C.live);
+
+// 分支 A：#12 已合并（绿）——从主干分出，弯上去，再弯回主干
+smoothCurve(150, T, 250, 45, C.done);
+smoothCurve(250, 45, 340, T, C.done);
+// 分支 B：#13 进行中（橙）——分出，不回去
+smoothCurve(400, T, 510, 45, C.run);
+// 分支 C：#14 进行中（橙）——向下分出
+smoothCurve(450, T, 560, 160, C.run);
+// 分支 D：#15 已合并（绿）——分出再弯回
+smoothCurve(650, T, 750, 45, C.done);
+smoothCurve(750, 45, 830, T, C.done);
+
+// 分支与主干的交点小方块
+[[150,T],[340,T],[400,T],[450,T],[650,T],[830,T]].forEach(([x,y]) => rect(x-PX, y-PX, PX*2, '#565f6e'));
+// 分支末端节点：大像素圆（6px 颗粒，锯齿明显）
+pixelCircle(250, 45, 12, C.done, C.done);
+pixelCircle(510, 45, 12, '#1d232b', C.run);
+pixelCircle(560, 160, 12, '#1d232b', C.run);
+pixelCircle(750, 45, 12, C.done, C.done);
+// 版本节点：更大的像素圆
+pixelCircle(300, T, 18, '#0e1116', C.done);
+pixelCircle(600, T, 18, '#0e1116', C.done);
+
+// 文字标签
+txt(300, T + 42, 'v1', C.done); txt(600, T + 42, 'v2', C.done);
+txt(250, 20, '#12 已合并'); txt(510, 20, '#13 进行中'); txt(560, 192, '#14 进行中'); txt(750, 20, '#15 已合并');
+
+// ===== ③④⑤ 逻辑 =====
+const ISSUES = [
+  {id:11, title:"导出功能：CSV 字段转义补位", st:"RUNNING", report:"## #11 导出功能\n\n- [x] 定位转义缺陷在 csv/escape.ts:42\n- [x] 补齐引号嵌套分支\n- [ ] 回归 3 个样例文件\n\n副本 .code-studio/worktrees/issue-11"},
+  {id:12, title:"批量跳转跳题选", st:"DONE", report:"## #12 批量跳转\n\n已完成并合并回主干（v2）。变更 2 文件 +31/−7，测试 12/12 通过。"},
+  {id:13, title:"auth/login token 过期刷新逻辑", st:"READY", report:"待派发。预计触碰 src/auth/* 三个文件。"},
+];
+let sel = null, filter = null;
+document.querySelectorAll('#stats .stat').forEach(el2=>{
+  el2.onclick = ()=>{
+    const f = el2.dataset.f;
+    filter = (filter===f) ? null : f;
+    document.querySelectorAll('#stats .stat').forEach(x=>x.classList.toggle('on', x.dataset.f===filter));
+    renderList();
+  };
+});
+function renderList(){
+  const q = document.getElementById('search').value.trim().toLowerCase();
+  const mode = document.getElementById('sortsel').value;
+  let rows = ISSUES.filter(i=>(!filter || i.st===filter) && (!q || i.title.toLowerCase().includes(q) || ('#'+i.id).includes(q)));
+  rows.sort((a,b)=> mode==='asc' ? a.id-b.id : b.id-a.id);
+  document.getElementById('gcount').textContent = rows.length + ' 单';
+  document.getElementById('ilist').innerHTML = rows.map(i=>`
+    <div class="irow ${sel===i.id?'sel':''}" data-st="${i.st}" data-id="${i.id}">
+      <span class="st">${i.st}</span><span class="id">#${i.id}</span><span class="tt">${i.title}</span>
+    </div>`).join('') || '<div class="sub">没有匹配的 issue</div>';
+  document.querySelectorAll('#ilist .irow').forEach(e2=>{
+    e2.onclick = ()=>{ sel = +e2.dataset.id; renderList(); renderReport(); };
+  });
+}
+document.getElementById('sortsel').onchange = renderList;
+document.getElementById('search').oninput = renderList;
+function renderReport(){
+  const it = ISSUES.find(i=>i.id===sel);
+  document.getElementById('report').innerHTML = it ? `
+    <h3>#${it.id} ${it.title}</h3>
+    <div class="meta"><span>${it.st}</span><span>副本 .code-studio/worktrees/issue-${it.id}</span></div>
+    <div class="ops"><button class="primary">合并</button><button>中止</button></div>
+    <pre>${it.report}</pre>` : '<div class="empty">未选中 issue</div>';
+}
+renderList();
+</script>
+</body>
+</html>

@@ -14,6 +14,9 @@ function inheritHostTokens() {
   let parentDoc;
   try { parentDoc = window.parent?.document; } catch { return; }
   if (!parentDoc || parentDoc === document) return;
+  /* 嵌入宿主时不自己画背景：透出宿主容器的材质/壁纸（BH 的 --bh-global-body-fill
+     半透明材质在 .dv-content-container 上），背景跟随的终点是透明。 */
+  document.documentElement.setAttribute('data-embed', '');
   const host = parentDoc.documentElement;
   /* 深色标志打在宿主 body 上（dsh-client-ui-theme: body.toggleAttribute(
      'data-ds-dark-theme')），深色别名值也在 body 作用域生效——
@@ -33,20 +36,34 @@ function inheritHostTokens() {
     '--bh-accent', '--bh-hover', '--bh-selected', '--bh-surface-selected',
   ];
   const root = document.documentElement.style;
+  /* BH 品牌令牌（--bh-accent 等）定义在 .bh-root 作用域（styles.ts:85-106），
+     从 body 的 computedStyle 读不到 —— 必须额外从 .bh-root 读并覆盖 body 值。 */
+  let bhRootEl = null;
   const copyTokens = () => {
-    const cs = window.parent.getComputedStyle(src);
-    for (const name of NEED) {
-      const v = cs.getPropertyValue(name).trim();
-      if (v) root.setProperty(name, v);
-    }
-    for (const name of cs) {
-      if (name.startsWith('--dsw-') || name.startsWith('--bh-')) {
+    const grab = (el) => {
+      if (!el) return;
+      const cs = window.parent.getComputedStyle(el);
+      for (const name of NEED) {
         const v = cs.getPropertyValue(name).trim();
         if (v) root.setProperty(name, v);
       }
-    }
+      for (const name of cs) {
+        if (name.startsWith('--dsw-') || name.startsWith('--bh-')) {
+          const v = cs.getPropertyValue(name).trim();
+          if (v) root.setProperty(name, v);
+        }
+      }
+    };
+    grab(src);
+    grab(bhRootEl || parentDoc.querySelector('.bh-root'));
   };
   const isDark = () => {
+    /* BH（BotHarness）有独立主题系统：标志打在宿主 <html> 的 data-bh-appearance
+       （appearance-scope.ts mountAppearance: documentElement.dataset.bhAppearance = mode），
+       与 DSH 的 body data-ds-dark-theme 各走各的 —— 有 BH 标志时以 BH 为准。 */
+    const bhMode = host.getAttribute('data-bh-appearance');
+    if (bhMode === 'dark') return true;
+    if (bhMode === 'light') return false;
     for (const el of [host, parentDoc.body]) {
       if (!el) continue;
       if (el.hasAttribute('data-ds-dark-theme')) return true;
@@ -61,9 +78,23 @@ function inheritHostTokens() {
     else document.documentElement.removeAttribute('data-theme');
   };
   syncTheme();
+  /* data-bh-appearance 是 BH 主题切换的唯一属性突变（appearance-scope 换的是
+     <style> 文本内容，不产生其他属性变化）—— 必须盯它，否则 BH 切主题不重拷。 */
+  const OPTS = { attributes: true, attributeFilter: ['data-ds-dark-theme', 'data-theme', 'data-bh-appearance', 'class', 'style'] };
   const mo = new MutationObserver(syncTheme);
-  mo.observe(src, { attributes: true, attributeFilter: ['data-ds-dark-theme', 'data-theme', 'class', 'style'] });
-  if (src !== host) mo.observe(host, { attributes: true, attributeFilter: ['data-ds-dark-theme', 'data-theme', 'class', 'style'] });
+  mo.observe(src, OPTS);
+  if (src !== host) mo.observe(host, OPTS);
+  /* .bh-root 是 BH SPA 后渲染出来的，可能晚于 iframe：找到后补挂属性监听（主题切换
+     改 .bh-root 的 class/style 时也要重拷），没找到前用一个临时子树 observer 等它。 */
+  const findBh = () => {
+    const el = parentDoc.querySelector('.bh-root');
+    if (el && el !== bhRootEl) { bhRootEl = el; mo.observe(el, OPTS); syncTheme(); }
+    return !!el;
+  };
+  if (!findBh()) {
+    const finder = new MutationObserver(() => { if (findBh()) finder.disconnect(); });
+    finder.observe(src, { childList: true, subtree: true });
+  }
 }
 
 try { inheritHostTokens(); } catch { /* 独立打开：用 fallback */ }

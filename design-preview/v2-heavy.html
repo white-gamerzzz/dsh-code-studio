@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>监控面板 v2 · 像素风 demo（第二版）</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource/fusion-pixel-12px-proportional-sc@5.3.0/index.css">
+<style>
+:root{
+  --bg:#0e1116; --card:#171b21; --card-2:#1d232b; --line:#2a313b; --line2:#3a4350;
+  --text:#e8eaed; --sub:#8b93a1; --accent:#3b82f6; --accent-weak:#3b82f633;
+  --run:#f59e0b; --review:#60a5fa; --done:#34d399; --fail:#f87171; --idle:#565f6e;
+  --px:'Fusion Pixel 12px Proportional SC', monospace; /* 断网自动退化成 monospace，仍是方块感 */
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font:13px/1.6 ui-sans-serif,system-ui,"Segoe UI";
+  /* 全局像素底噪：一层极淡的 2px 棋盘格 */
+  background-image:conic-gradient(#ffffff06 25%, transparent 0 50%, #ffffff06 0 75%, transparent 0);
+  background-size:4px 4px;}
+.wrap{max-width:980px;margin:0 auto;padding:24px 16px 80px}
+h1{font-family:var(--px);font-size:18px;letter-spacing:1px;text-shadow:2px 2px 0 #000}
+.note{color:var(--sub);margin:6px 0 24px}
+.sect{margin:36px 0 12px;font-family:var(--px);font-size:14px;letter-spacing:1px;
+  display:flex;gap:10px;align-items:center;text-shadow:2px 2px 0 #000}
+.sect .tag{font-family:ui-sans-serif,system-ui;font-size:11px;color:var(--sub);
+  background:var(--card-2);border:1px solid var(--line);border-radius:0;padding:1px 8px;text-shadow:none}
+.card{background:var(--card);border:2px solid var(--line);border-radius:0;
+  box-shadow:4px 4px 0 #000;padding:16px}
+.sub{color:var(--sub);font-size:12px;margin:6px 0 12px}
+canvas.px{image-rendering:pixelated}
+
+/* ---------- ① 像素进度条（滑块一体，直接拖条） ---------- */
+.pxbar{position:relative;height:30px;margin-top:20px;cursor:ew-resize;user-select:none;touch-action:none}
+.pxbar .seg{position:absolute;top:8px;left:0;height:14px;width:100%;
+  background:repeating-linear-gradient(45deg, var(--idle) 0 6px, transparent 6px 8px, var(--idle) 8px 8px, transparent 8px 12px);}
+.pxbar .fill{position:absolute;top:8px;left:0;height:14px;width:0;overflow:hidden;
+  background:repeating-linear-gradient(45deg,
+    var(--accent) 0 6px, var(--accent) 6px 8px, #7dabf8 8px 12px);
+  animation:march 1.1s linear infinite}
+@keyframes march{from{background-position:0 0}to{background-position:17px 0}}
+.pxbar .vn{position:absolute;top:0;width:6px;height:30px;background:var(--done);box-shadow:2px 2px 0 #000}
+.pxbar .vn b{position:absolute;top:-16px;left:50%;transform:translateX(-50%);
+  font-family:var(--px);font-size:12px;color:var(--done);text-shadow:2px 2px 0 #000}
+.pxbar .cursor{position:absolute;top:4px;width:10px;height:22px;background:var(--text);
+  box-shadow:3px 3px 0 #000}
+.pxbar .head{position:absolute;top:34px;left:0;width:100%;height:10px;
+  background:repeating-linear-gradient(90deg,var(--line) 0 6px,transparent 6px 12px)}
+#pxread{font-family:var(--px);font-size:12px;color:var(--accent);margin-top:14px;text-shadow:2px 2px 0 #000}
+
+/* ---------- ② 像素生长树 ---------- */
+.treesvg{shape-rendering:crispEdges}
+.treesvg text{font-family:var(--px);font-size:11px;fill:var(--sub)}
+.treesvg .trunk{stroke:var(--line2);stroke-width:6;fill:none}
+.treesvg .trunk-live{stroke:var(--accent);stroke-width:6;fill:none;stroke-dasharray:8 6;animation:flow 0.9s steps(2) infinite}
+@keyframes flow{to{stroke-dashoffset:-14}}
+.treesvg .branch{stroke:var(--run);stroke-width:4;fill:none}
+.treesvg .branch.merged{stroke:var(--done)}
+.treesvg .bn{fill:var(--card-2);stroke:var(--run);stroke-width:3}
+.treesvg .bn.merged{stroke:var(--done)}
+.treesvg .shadow{fill:#000;opacity:.6}
+.treesvg .tn{fill:#0e1116;stroke:var(--done);stroke-width:3}
+.treesvg .tn text{fill:var(--done)}
+
+/* ---------- ③ 统计卡兼筛选（像素块） ---------- */
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(96px,1fr));gap:10px}
+.stat{background:var(--card-2);border:2px solid var(--line);border-radius:0;padding:10px 12px;
+  cursor:pointer;user-select:none;box-shadow:3px 3px 0 #000}
+.stat:active{transform:translate(2px,2px);box-shadow:1px 1px 0 #000}
+.stat .num{font-family:var(--px);font-size:22px}
+.stat .lbl{font-family:var(--px);font-size:11px;color:var(--sub);margin-top:2px;text-shadow:none}
+.stat:hover{border-color:var(--line2)}
+.stat.on{border-color:var(--accent);background:color-mix(in srgb,var(--accent-weak) 70%,var(--card-2))}
+.stat.on .num{color:var(--accent)}
+
+/* ---------- ④ issue 列表 ---------- */
+.grphead{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px}
+.grphead .gname{font-family:var(--px);font-size:14px;text-shadow:2px 2px 0 #000}
+.grphead .gcount{color:var(--sub);font-size:12px}
+.filters{display:flex;gap:8px;margin:8px 0}
+.filters select,.filters input{background:var(--card-2);border:2px solid var(--line);color:var(--text);
+  border-radius:0;padding:5px 10px;font-size:12px;outline:none;box-shadow:2px 2px 0 #000}
+.filters input{flex:1;font-family:ui-monospace,monospace}
+.filters select:focus,.filters input:focus{border-color:var(--accent)}
+.ilist{display:flex;flex-direction:column;gap:8px;margin-top:10px}
+.irow{position:relative;display:flex;align-items:center;gap:10px;background:var(--card);
+  border:2px solid var(--line);border-radius:0;padding:9px 12px;cursor:pointer;box-shadow:3px 3px 0 #000}
+.irow:hover{background:var(--card-2);border-color:var(--line2)}
+.irow.sel{border-color:var(--accent);background:color-mix(in srgb,var(--accent-weak) 60%,var(--card))}
+.irow::before{content:"";position:absolute;left:-2px;top:6px;bottom:6px;width:5px;background:var(--idle)}
+.irow[data-st=RUNNING]::before{background:var(--run);box-shadow:0 0 0 1px #0009, 2px 0 0 #000}
+.irow[data-st=REVIEW]::before{background:var(--review)}
+.irow[data-st=DONE]::before{background:var(--done)}
+.irow[data-st=FAILED]::before{background:var(--fail)}
+.irow .id{font-family:var(--px);font-size:12px;color:var(--sub)}
+.irow .tt{flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.irow .st{font-family:var(--px);font-size:11px;color:var(--sub)}
+
+/* ---------- ⑤ 报告大区 ---------- */
+.report h3{font-family:var(--px);font-size:14px;margin-bottom:8px;text-shadow:2px 2px 0 #000}
+.report .meta{color:var(--sub);font-size:12px;display:flex;gap:14px;margin-bottom:10px;flex-wrap:wrap}
+.report .ops{display:flex;gap:10px;margin:10px 0}
+.report .ops button{font-family:var(--px);font-size:12px;background:var(--card-2);border:2px solid var(--line);
+  color:var(--text);border-radius:0;padding:6px 16px;cursor:pointer;box-shadow:3px 3px 0 #000}
+.report .ops button:active{transform:translate(2px,2px);box-shadow:1px 1px 0 #000}
+.report .ops button.primary{background:color-mix(in srgb,var(--accent) 35%,var(--card-2));border-color:var(--accent)}
+.report pre{background:#0e1116;border:2px solid var(--line);border-radius:0;padding:12px;
+  font:12px/1.6 ui-monospace,monospace;white-space:pre-wrap;color:#c3c9d4;max-height:220px;overflow:auto}
+.empty{color:var(--sub);border:2px dashed var(--line);border-radius:0;padding:28px;text-align:center;font-family:var(--px);font-size:12px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>监控面板 v2 · 像素风 demo</h1>
+  <div class="note">第二版：标题/数字/按钮 = 像素字体（Fusion Pixel，断网退化 monospace），正文正常字体；进度条与滑块一体直接拖；生长树像素化（阶梯折线+方块节点）。mock 数据。</div>
+
+  <!-- ① 像素进度条 + 一体滑块 -->
+  <div class="sect">① 像素进度条 = 时间轴滑块 <span class="tag">m20599 一体化</span></div>
+  <div class="card">
+    <div class="sub">直接在条上按住拖动（不需要下面的独立滑块了）；斜纹持续向前滚动；绿方块=版本节点。</div>
+    <div class="pxbar" id="pxbar">
+      <div class="seg"></div>
+      <div class="fill" id="pxfill"></div>
+      <div class="head"></div>
+      <div class="vn" style="left:28%"><b>v1</b></div>
+      <div class="vn" style="left:56%"><b>v2</b></div>
+      <div class="vn" style="left:82%"><b>v3</b></div>
+      <div class="cursor" id="pxcursor" style="left:40%"></div>
+    </div>
+    <div id="pxread">区间 40%</div>
+  </div>
+
+  <!-- ② 像素生长树 -->
+  <div class="sect">② 项目生长树（像素风） <span class="tag">m20599</span></div>
+  <div class="card">
+    <div class="sub">阶梯折线=像素斜线（禁平滑）；方块节点带硬阴影；灰色主干、蓝色虚线段=生长中（步进动画，非平滑流动）。</div>
+    <div class="tree">
+      <svg class="treesvg" id="tree" width="100%" height="190" viewBox="0 0 900 190" preserveAspectRatio="xMinYMid meet"></svg>
+    </div>
+  </div>
+
+  <!-- ③ 统计卡兼筛选 -->
+  <div class="sect">③ 统计卡 = 筛选按钮 <span class="tag">m20556</span></div>
+  <div class="card">
+    <div class="sub">数字用像素字体；按下有 2px 位移的按压感；点卡片=筛选，再点取消。</div>
+    <div class="stats" id="stats">
+      <div class="stat" data-f="RUNNING"><div class="num">1</div><div class="lbl">进行中</div></div>
+      <div class="stat" data-f="REVIEW"><div class="num">0</div><div class="lbl">待合并</div></div>
+      <div class="stat" data-f="READY"><div class="num">1</div><div class="lbl">待派</div></div>
+      <div class="stat" data-f="DONE"><div class="num">1</div><div class="lbl">已完成</div></div>
+      <div class="stat" data-f="FAILED"><div class="num">0</div><div class="lbl">异常</div></div>
+    </div>
+  </div>
+
+  <!-- ④ issue 列表 -->
+  <div class="sect">④ issue 列表 <span class="tag">组名+筛选条+灯条行</span></div>
+  <div class="card">
+    <div class="grphead"><span class="gname">default-workspace</span><span class="gcount" id="gcount"></span></div>
+    <div class="filters">
+      <select id="sortsel">
+        <option value="new">最新优先</option>
+        <option value="asc">编号升序</option>
+        <option value="desc">编号降序</option>
+      </select>
+      <input id="search" placeholder="搜索标题 / #编号">
+    </div>
+    <div class="ilist" id="ilist"></div>
+  </div>
+
+  <!-- ⑤ 报告大区 -->
+  <div class="sect">⑤ 报告大区 <span class="tag">点 issue 联动</span></div>
+  <div class="card report" id="report">
+    <div class="empty">点上面 issue 行查看具体报告</div>
+  </div>
+</div>
+
+<script>
+// ===== ① 进度条一体滑块 =====
+const bar = document.getElementById('pxbar');
+let dragging = false;
+function setPct(clientX){
+  const r = bar.getBoundingClientRect();
+  const v = Math.max(0, Math.min(100, Math.round((clientX - r.left) / r.width * 100)));
+  document.getElementById('pxfill').style.width = v + '%';
+  document.getElementById('pxcursor').style.left = `calc(${v}% - 5px)`;
+  document.getElementById('pxread').textContent = '区间 ' + v + '%（版本节点间跳转后续接树联动）';
+}
+bar.addEventListener('pointerdown', e => { dragging = true; bar.setPointerCapture(e.pointerId); setPct(e.clientX); });
+bar.addEventListener('pointermove', e => { if (dragging) setPct(e.clientX); });
+bar.addEventListener('pointerup', () => dragging = false);
+setPct(bar.getBoundingClientRect().left + bar.getBoundingClientRect().width * 0.4);
+
+// ===== ② 像素生长树：阶梯折线生成 =====
+const svg = document.getElementById('tree');
+const NS = 'http://www.w3.org/2000/svg';
+function el(tag, attrs){ const n = document.createElementNS(NS, tag); for (const k in attrs) n.setAttribute(k, attrs[k]); return n; }
+// 阶梯线：从(x1,y1)走到(x2,y2)，步长 step，硬直角折线（像素斜线）
+function stairPath(x1, y1, x2, y2, step = 10){
+  let d = `M${x1} ${y1}`, x = x1, y = y1;
+  const dx = Math.sign(x2 - x1) * step, dy = Math.sign(y2 - y1) * step;
+  while ((dx > 0 && x < x2) || (dx < 0 && x > x2)) {
+    x = Math.abs(x2 - x) < step ? x2 : x + dx;
+    d += ` L${x} ${y}`;
+    if ((dy > 0 && y < y2) || (dy < 0 && y > y2)) { y = Math.abs(y2 - y) < step ? y2 : y + dy; d += ` L${x} ${y}`; }
+  }
+  while ((dy > 0 && y < y2) || (dy < 0 && y > y2)) { y = Math.abs(y2 - y) < step ? y2 : y + dy; d += ` L${x} ${y}`; }
+  return d;
+}
+function shadowRect(x, y, s){ svg.appendChild(el('rect', {class:'shadow', x:x+3, y:y+3, width:s, height:s})); }
+function sqNode(x, y, s, cls){ shadowRect(x - s/2, y - s/2, s); svg.appendChild(el('rect', {class:cls, x:x-s/2, y:y-s/2, width:s, height:s})); }
+const T = 95; // 主干 y
+// 主干三段
+svg.appendChild(el('path', {class:'trunk', d: stairPath(20, T, 320, T)}));
+svg.appendChild(el('path', {class:'trunk-live', d: stairPath(320, T, 560, T)}));
+svg.appendChild(el('path', {class:'trunk', d: stairPath(560, T, 860, T)}));
+// 分叉（阶梯折线出主干）
+svg.appendChild(el('path', {class:'branch', d: stairPath(120, T, 232, 48)}));
+svg.appendChild(el('path', {class:'branch merged', d: stairPath(180, T, 292, 60)}));
+svg.appendChild(el('path', {class:'branch', d: stairPath(240, T, 352, 134)}));
+svg.appendChild(el('path', {class:'branch merged', d: stairPath(620, T, 732, 54)}));
+// 节点：方块。版本节点大一点
+sqNode(120, T, 8, 'bn'); sqNode(180, T, 8, 'bn'); sqNode(240, T, 8, 'bn'); sqNode(620, T, 8, 'bn');
+sqNode(232, 48, 14, 'bn'); sqNode(292, 60, 14, 'bn merged'); sqNode(352, 134, 14, 'bn'); sqNode(732, 54, 14, 'bn merged');
+sqNode(320, T, 22, 'tn'); sqNode(560, T, 22, 'tn');
+function txt(x, y, s){ const t = el('text', {x, y, 'text-anchor':'middle'}); t.textContent = s; svg.appendChild(t); }
+txt(320, T + 30, 'v1'); txt(560, T + 30, 'v2');
+txt(232, 28, '#13 进行中'); txt(292, 42, '#12 已合并'); txt(352, 156, '#14 进行中'); txt(732, 36, '#15 已合并');
+
+// ===== ③④⑤ 同第一版逻辑 =====
+const ISSUES = [
+  {id:11, title:"导出功能：CSV 字段转义补位", st:"RUNNING", report:"## #11 导出功能\n\n- [x] 定位转义缺陷在 csv/escape.ts:42\n- [x] 补齐引号嵌套分支\n- [ ] 回归 3 个样例文件\n\n副本 .code-studio/worktrees/issue-11"},
+  {id:12, title:"批量跳转跳 2ze 题选（跳-08）", st:"DONE", report:"## #12 批量跳转\n\n已完成并合并回主干（v2）。变更 2 文件 +31/−7，测试 12/12 通过。"},
+  {id:13, title:"auth/login token 过期刷新逻辑", st:"READY", report:"待派发。预计触碰 src/auth/* 三个文件。"},
+];
+let sel = null, filter = null;
+document.querySelectorAll('#stats .stat').forEach(el2=>{
+  el2.onclick = ()=>{
+    const f = el2.dataset.f;
+    filter = (filter===f) ? null : f;
+    document.querySelectorAll('#stats .stat').forEach(x=>x.classList.toggle('on', x.dataset.f===filter));
+    renderList();
+  };
+});
+function renderList(){
+  const q = document.getElementById('search').value.trim().toLowerCase();
+  const mode = document.getElementById('sortsel').value;
+  let rows = ISSUES.filter(i=>(!filter || i.st===filter) && (!q || i.title.toLowerCase().includes(q) || ('#'+i.id).includes(q)));
+  rows.sort((a,b)=> mode==='asc' ? a.id-b.id : b.id-a.id);
+  document.getElementById('gcount').textContent = rows.length + ' 单';
+  document.getElementById('ilist').innerHTML = rows.map(i=>`
+    <div class="irow ${sel===i.id?'sel':''}" data-st="${i.st}" data-id="${i.id}">
+      <span class="st">${i.st}</span><span class="id">#${i.id}</span><span class="tt">${i.title}</span>
+    </div>`).join('') || '<div class="sub">没有匹配的 issue</div>';
+  document.querySelectorAll('#ilist .irow').forEach(e2=>{
+    e2.onclick = ()=>{ sel = +e2.dataset.id; renderList(); renderReport(); };
+  });
+}
+document.getElementById('sortsel').onchange = renderList;
+document.getElementById('search').oninput = renderList;
+function renderReport(){
+  const it = ISSUES.find(i=>i.id===sel);
+  document.getElementById('report').innerHTML = it ? `
+    <h3>#${it.id} ${it.title}</h3>
+    <div class="meta"><span>${it.st}</span><span>副本 .code-studio/worktrees/issue-${it.id}</span></div>
+    <div class="ops"><button class="primary">合并</button><button>中止</button></div>
+    <pre>${it.report}</pre>` : '<div class="empty">未选中 issue</div>';
+}
+renderList();
+</script>
+</body>
+</html>

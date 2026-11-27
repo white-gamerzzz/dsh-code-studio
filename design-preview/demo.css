@@ -1,0 +1,98 @@
+/* 监控面板 v2 demo · 像素主题（组件拆分版） */
+:root{
+  --bg:#0e1116; --card:#171b21; --card-2:#1d232b; --line:#2a313b; --line2:#3a4350;
+  --text:#e8eaed; --sub:#8b93a1; --accent:#3b82f6; --accent-weak:#3b82f633;
+  --run:#f59e0b; --review:#60a5fa; --done:#34d399; --fail:#f87171; --idle:#565f6e;
+  --px:'Fusion Pixel 12px Proportional SC', monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font:13px/1.6 ui-sans-serif,system-ui,"Segoe UI";
+  background-image:conic-gradient(#ffffff06 25%, transparent 0 50%, #ffffff06 0 75%, transparent 0);
+  background-size:4px 4px;}
+.wrap{max-width:980px;margin:0 auto;padding:24px 16px 80px}
+h1{font-family:var(--px);font-size:18px;letter-spacing:1px;text-shadow:2px 2px 0 #000;font-weight:400}
+.note{color:var(--sub);margin:6px 0 24px}
+.sect{margin:36px 0 12px;font-family:var(--px);font-size:14px;letter-spacing:1px;
+  display:flex;gap:10px;align-items:center;text-shadow:2px 2px 0 #000;font-weight:400}
+.sect .tag{font-family:ui-sans-serif,system-ui;font-size:11px;color:var(--sub);
+  background:var(--card-2);border:1px solid var(--line);border-radius:0;padding:1px 8px;text-shadow:none}
+.card{background:var(--card);border:2px solid var(--line);border-radius:0;
+  box-shadow:4px 4px 0 #000;padding:16px}
+.sub{color:var(--sub);font-size:12px;margin:6px 0 12px}
+
+/* ---------- ① 像素进度条（滑块一体，直接拖条） ---------- */
+.pxbar{position:relative;height:30px;margin-top:20px;cursor:ew-resize;user-select:none;touch-action:none}
+.pxbar .seg{position:absolute;top:8px;left:0;height:14px;width:100%;
+  background:repeating-linear-gradient(45deg, var(--idle) 0 6px, transparent 6px 8px, var(--idle) 8px 8px, transparent 8px 12px);}
+.pxbar .fill{position:absolute;top:8px;left:0;height:14px;width:0;overflow:hidden;
+  background:repeating-linear-gradient(45deg,
+    var(--accent) 0 6px, var(--accent) 6px 8px, #7dabf8 8px 12px);
+  animation:march 1.1s linear infinite}
+@keyframes march{from{background-position:0 0}to{background-position:17px 0}}
+.pxbar .vn{position:absolute;top:0;width:6px;height:30px;background:var(--done);box-shadow:2px 2px 0 #000}
+.pxbar .vn b{position:absolute;top:-16px;left:50%;transform:translateX(-50%);
+  font-family:var(--px);font-size:12px;color:var(--done);text-shadow:2px 2px 0 #000}
+.pxbar .cursor{position:absolute;top:4px;width:10px;height:22px;background:var(--text);
+  box-shadow:3px 3px 0 #000}
+#pxread{font-family:var(--px);font-size:12px;color:var(--accent);margin-top:14px;text-shadow:2px 2px 0 #000}
+
+/* ---------- ② 生长树：细线 S 弯 + 高清像素节点 + 生长动画 ---------- */
+.treesvg text{font-family:var(--px);font-size:11px;fill:var(--sub)}
+.gpath{transition:stroke-dashoffset .9s linear}
+.orb{transform-box:fill-box;transform-origin:center;
+  transition:transform .45s steps(7),opacity .35s linear}
+.orb.hidden{transform:scale(0)}
+.orb.fade{transform:scale(.15);opacity:0}
+.orb.pulse{animation:orb-pulse .35s steps(3)}
+@keyframes orb-pulse{50%{transform:scale(1.3)}}
+.tlabel{transition:opacity .4s linear}
+.noanim .gpath,.noanim .orb,.noanim .tlabel{transition:none}
+.pxbtn{font-family:var(--px);font-size:12px;background:var(--card-2);border:2px solid var(--line);
+  color:var(--text);border-radius:0;padding:5px 14px;cursor:pointer;box-shadow:3px 3px 0 #000;margin-bottom:8px}
+.pxbtn:active{transform:translate(2px,2px);box-shadow:1px 1px 0 #000}
+
+/* ---------- ③ 统计卡兼筛选 ---------- */
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(96px,1fr));gap:10px}
+.stat{background:var(--card-2);border:2px solid var(--line);border-radius:0;padding:10px 12px;
+  cursor:pointer;user-select:none;box-shadow:3px 3px 0 #000}
+.stat:active{transform:translate(2px,2px);box-shadow:1px 1px 0 #000}
+.stat .num{font-family:var(--px);font-size:22px}
+.stat .lbl{font-family:var(--px);font-size:11px;color:var(--sub);margin-top:2px;text-shadow:none}
+.stat:hover{border-color:var(--line2)}
+.stat.on{border-color:var(--accent);background:color-mix(in srgb,var(--accent-weak) 70%,var(--card-2))}
+.stat.on .num{color:var(--accent)}
+
+/* ---------- ④ issue 列表 ---------- */
+.grphead{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px}
+.grphead .gname{font-family:var(--px);font-size:14px;text-shadow:2px 2px 0 #000}
+.grphead .gcount{color:var(--sub);font-size:12px}
+.filters{display:flex;gap:8px;margin:8px 0}
+.filters select,.filters input{background:var(--card-2);border:2px solid var(--line);color:var(--text);
+  border-radius:0;padding:5px 10px;font-size:12px;outline:none;box-shadow:2px 2px 0 #000}
+.filters input{flex:1;font-family:ui-monospace,monospace}
+.filters select:focus,.filters input:focus{border-color:var(--accent)}
+.ilist{display:flex;flex-direction:column;gap:8px;margin-top:10px}
+.irow{position:relative;display:flex;align-items:center;gap:10px;background:var(--card);
+  border:2px solid var(--line);border-radius:0;padding:9px 12px;cursor:pointer;box-shadow:3px 3px 0 #000}
+.irow:hover{background:var(--card-2);border-color:var(--line2)}
+.irow.sel{border-color:var(--accent);background:color-mix(in srgb,var(--accent-weak) 60%,var(--card))}
+.irow::before{content:"";position:absolute;left:-2px;top:6px;bottom:6px;width:5px;background:var(--idle)}
+.irow[data-st=RUNNING]::before{background:var(--run)}
+.irow[data-st=REVIEW]::before{background:var(--review)}
+.irow[data-st=DONE]::before{background:var(--done)}
+.irow[data-st=FAILED]::before{background:var(--fail)}
+.irow .id{font-family:var(--px);font-size:12px;color:var(--sub)}
+.irow .tt{flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.irow .st{font-family:var(--px);font-size:11px;color:var(--sub)}
+
+/* ---------- ⑤ 报告大区 ---------- */
+.report h3{font-family:var(--px);font-size:14px;margin-bottom:8px;text-shadow:2px 2px 0 #000;font-weight:400}
+.report .meta{color:var(--sub);font-size:12px;display:flex;gap:14px;margin-bottom:10px;flex-wrap:wrap}
+.report .ops{display:flex;gap:10px;margin:10px 0}
+.report .ops button{font-family:var(--px);font-size:12px;background:var(--card-2);border:2px solid var(--line);
+  color:var(--text);border-radius:0;padding:6px 16px;cursor:pointer;box-shadow:3px 3px 0 #000}
+.report .ops button:active{transform:translate(2px,2px);box-shadow:1px 1px 0 #000}
+.report .ops button.primary{background:color-mix(in srgb,var(--accent) 35%,var(--card-2));border-color:var(--accent)}
+.report pre{background:#0e1116;border:2px solid var(--line);border-radius:0;padding:12px;
+  font:12px/1.6 ui-monospace,monospace;white-space:pre-wrap;color:#c3c9d4;max-height:220px;overflow:auto}
+.empty{color:var(--sub);border:2px dashed var(--line);border-radius:0;padding:28px;text-align:center;font-family:var(--px);font-size:12px}
